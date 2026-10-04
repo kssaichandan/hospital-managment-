@@ -6,6 +6,7 @@ login, patients, doctors, appointments, medical records and billing.
 All inputs pass through validators.py before being saved.
 """
 import sqlite3
+from contextlib import closing
 
 import validators as v
 
@@ -61,13 +62,14 @@ CREATE TABLE IF NOT EXISTS bills (
 class HospitalDB:
     def __init__(self, path):
         self.path = path
-        with self._connect() as conn:
+        with closing(self._connect()) as conn:
             conn.executescript(SCHEMA)
             # Default login for the demo: admin / admin123
             conn.execute(
                 "INSERT OR IGNORE INTO users (username, password) VALUES (?, ?)",
                 ("admin", "admin123"),
             )
+            conn.commit()
 
     def _connect(self):
         conn = sqlite3.connect(self.path)
@@ -75,13 +77,16 @@ class HospitalDB:
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
+    # closing(...) makes sure every connection is closed after use
     def _query(self, sql, params=()):
-        with self._connect() as conn:
+        with closing(self._connect()) as conn:
             return [dict(row) for row in conn.execute(sql, params).fetchall()]
 
     def _execute(self, sql, params=()):
-        with self._connect() as conn:
-            return conn.execute(sql, params).lastrowid
+        with closing(self._connect()) as conn:
+            cursor = conn.execute(sql, params)
+            conn.commit()
+            return cursor.lastrowid
 
     # ---------------- Login ----------------
     def check_login(self, username, password):
@@ -130,6 +135,8 @@ class HospitalDB:
         return rows[0] if rows else None
 
     def delete_patient(self, patient_id):
+        if not self.get_patient(patient_id):
+            raise ValueError("Patient not found.")
         self._execute("DELETE FROM patients WHERE id = ?", (patient_id,))
 
     # ---------------- Doctors ----------------
@@ -168,11 +175,15 @@ class HospitalDB:
         return rows[0] if rows else None
 
     def toggle_availability(self, doctor_id):
+        if not self.get_doctor(doctor_id):
+            raise ValueError("Doctor not found.")
         self._execute(
             "UPDATE doctors SET available = 1 - available WHERE id = ?", (doctor_id,)
         )
 
     def delete_doctor(self, doctor_id):
+        if not self.get_doctor(doctor_id):
+            raise ValueError("Doctor not found.")
         self._execute("DELETE FROM doctors WHERE id = ?", (doctor_id,))
 
     # ---------------- Appointments ----------------
@@ -194,6 +205,14 @@ class HospitalDB:
         )
         if clash:
             raise ValueError("This doctor is already booked for that date and time.")
+        # Business rule: a patient cannot be in two appointments at the same time
+        clash = self._query(
+            "SELECT id FROM appointments WHERE patient_id = ? AND date = ? AND time = ? "
+            "AND status = 'Scheduled'",
+            (patient_id, date, time),
+        )
+        if clash:
+            raise ValueError("This patient already has an appointment at that date and time.")
         return self._execute(
             "INSERT INTO appointments (patient_id, doctor_id, date, time) VALUES (?, ?, ?, ?)",
             (patient_id, doctor_id, date, time),
@@ -208,7 +227,13 @@ class HospitalDB:
             "ORDER BY a.date, a.time"
         )
 
+    def get_appointment(self, appointment_id):
+        rows = self._query("SELECT * FROM appointments WHERE id = ?", (appointment_id,))
+        return rows[0] if rows else None
+
     def cancel_appointment(self, appointment_id):
+        if not self.get_appointment(appointment_id):
+            raise ValueError("Appointment not found.")
         self._execute(
             "UPDATE appointments SET status = 'Cancelled' WHERE id = ?", (appointment_id,)
         )
@@ -262,6 +287,8 @@ class HospitalDB:
         )
 
     def mark_bill_paid(self, bill_id):
+        if not self._query("SELECT id FROM bills WHERE id = ?", (bill_id,)):
+            raise ValueError("Bill not found.")
         self._execute("UPDATE bills SET status = 'Paid' WHERE id = ?", (bill_id,))
 
     # ---------------- Dashboard ----------------

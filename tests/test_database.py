@@ -174,3 +174,25 @@ def test_dashboard_stats(db):
     db.add_medical_record(p, TODAY, "Viral fever", "Rest and fluids", "Paracetamol 500mg")
     assert db.get_stats() == {"patients": 1, "doctors": 1, "appointments": 1,
                               "records": 1, "unpaid_bills": 1}
+
+
+# ---- regression tests for bugs found during exploratory (break) testing ----
+def test_patient_cannot_be_double_booked_with_two_doctors(db):
+    p = add_sample_patient(db)
+    d1 = add_sample_doctor(db, "Dr. Priya Sharma")
+    d2 = add_sample_doctor(db, "Dr. Anil Reddy")
+    db.book_appointment(p, d1, TOMORROW, "10:00")
+    with pytest.raises(ValueError, match="patient already has an appointment"):
+        db.book_appointment(p, d2, TOMORROW, "10:00")
+
+
+@pytest.mark.parametrize("action, message", [
+    ("delete_patient", "Patient not found"),
+    ("delete_doctor", "Doctor not found"),
+    ("toggle_availability", "Doctor not found"),
+    ("cancel_appointment", "Appointment not found"),
+    ("mark_bill_paid", "Bill not found"),
+])
+def test_actions_on_missing_records_show_error(db, action, message):
+    with pytest.raises(ValueError, match=message):
+        getattr(db, action)(999)

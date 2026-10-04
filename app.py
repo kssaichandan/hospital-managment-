@@ -102,8 +102,7 @@ def create_app(db_path="hospital.db", seed=False):
     @app.route("/patients/<int:patient_id>/delete", methods=["POST"])
     @login_required
     def delete_patient(patient_id):
-        db.delete_patient(patient_id)
-        flash("Patient removed successfully.", "success")
+        run_action(lambda: db.delete_patient(patient_id), "Patient removed successfully.")
         return redirect(url_for("patients"))
 
     # ---------------- Doctors ----------------
@@ -142,15 +141,13 @@ def create_app(db_path="hospital.db", seed=False):
     @app.route("/doctors/<int:doctor_id>/availability", methods=["POST"])
     @login_required
     def toggle_availability(doctor_id):
-        db.toggle_availability(doctor_id)
-        flash("Doctor availability updated.", "success")
+        run_action(lambda: db.toggle_availability(doctor_id), "Doctor availability updated.")
         return redirect(url_for("doctors"))
 
     @app.route("/doctors/<int:doctor_id>/delete", methods=["POST"])
     @login_required
     def delete_doctor(doctor_id):
-        db.delete_doctor(doctor_id)
-        flash("Doctor removed successfully.", "success")
+        run_action(lambda: db.delete_doctor(doctor_id), "Doctor removed successfully.")
         return redirect(url_for("doctors"))
 
     # ---------------- Appointments ----------------
@@ -172,8 +169,7 @@ def create_app(db_path="hospital.db", seed=False):
     @app.route("/appointments/<int:appointment_id>/cancel", methods=["POST"])
     @login_required
     def cancel_appointment(appointment_id):
-        db.cancel_appointment(appointment_id)
-        flash("Appointment cancelled.", "success")
+        run_action(lambda: db.cancel_appointment(appointment_id), "Appointment cancelled.")
         return redirect(url_for("appointments"))
 
     # ---------------- Medical Records ----------------
@@ -211,8 +207,7 @@ def create_app(db_path="hospital.db", seed=False):
     @app.route("/billing/<int:bill_id>/pay", methods=["POST"])
     @login_required
     def pay_bill(bill_id):
-        db.mark_bill_paid(bill_id)
-        flash("Bill marked as paid.", "success")
+        run_action(lambda: db.mark_bill_paid(bill_id), "Bill marked as paid.")
         return redirect(url_for("billing"))
 
     return app

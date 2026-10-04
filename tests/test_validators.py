@@ -85,3 +85,33 @@ def test_negative_charge_is_rejected():
 def test_future_visit_date_is_rejected():
     with pytest.raises(ValueError, match="future"):
         v.validate_visit_date("2026-12-31", today=date(2026, 1, 1))
+
+
+# ---- regression tests for bugs found during exploratory (break) testing ----
+@pytest.mark.parametrize("name", ["..", "''", ". ."])
+def test_name_with_only_symbols_is_rejected(name):
+    with pytest.raises(ValueError, match="at least 2 letters"):
+        v.validate_name(name)
+
+
+def test_very_long_name_is_rejected():
+    with pytest.raises(ValueError, match="longer than 50"):
+        v.validate_name("A" * 51)
+
+
+def test_very_long_text_is_rejected():
+    with pytest.raises(ValueError, match="longer than 200"):
+        v.validate_text("x" * 201, "Disease")
+
+
+@pytest.mark.parametrize("amount", ["nan", "inf", "1e309"])
+def test_nan_and_infinity_amounts_are_rejected(amount):
+    with pytest.raises(ValueError, match="must be a number"):
+        v.validate_amount(amount)
+    with pytest.raises(ValueError, match="must be a number"):
+        v.validate_charge(amount, "Treatment charge")
+
+
+def test_phone_with_non_english_digits_is_rejected():
+    with pytest.raises(ValueError, match="10 digits"):
+        v.validate_phone("９８７６５４３２１０")  # full-width digits

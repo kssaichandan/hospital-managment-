@@ -21,6 +21,7 @@ Launch browser -> Open HMS -> Locate elements -> Perform actions -> Submit -> Ve
 """
 from datetime import date, timedelta
 
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
@@ -33,7 +34,9 @@ def click_and_wait(driver, element_id):
     """Click a submit button and wait until the next page has loaded."""
     button = driver.find_element(By.ID, element_id)
     button.click()
-    WebDriverWait(driver, 10).until(EC.staleness_of(button))
+    # While the page is changing, Chrome can briefly report odd errors - just check again
+    wait = WebDriverWait(driver, 10, ignored_exceptions=[WebDriverException])
+    wait.until(EC.staleness_of(button))
 
 
 def login(driver, base_url, username="admin", password="admin123"):

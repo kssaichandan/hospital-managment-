@@ -132,3 +132,17 @@ def test_create_and_pay_bill(logged_in_client):
 def test_logout(logged_in_client):
     logged_in_client.get("/logout")
     assert logged_in_client.get("/dashboard").status_code == 302
+
+
+# ---- regression tests for bugs found during exploratory (break) testing ----
+def test_doctor_fee_nan_shows_error_instead_of_crashing(logged_in_client):
+    response = logged_in_client.post("/doctors", data=dict(DOCTOR, fee="nan"),
+                                     follow_redirects=True)
+    assert response.status_code == 200  # before the fix this was a 500 server error
+    assert b"Fee must be a number" in response.data
+
+
+def test_deleting_missing_patient_shows_error(logged_in_client):
+    response = logged_in_client.post("/patients/999/delete", follow_redirects=True)
+    assert b"Patient not found" in response.data
+    assert b"removed successfully" not in response.data

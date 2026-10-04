@@ -43,7 +43,7 @@ Three sample doctors are added automatically the first time you run it. Data is 
 ## 3. How to run the tests
 
 ```bash
-# All 81 tests (13 Selenium + 68 PyTest). Chrome opens and runs the UI tests in front of you.
+# All 98 tests (13 Selenium + 85 PyTest). Chrome opens and runs the UI tests in front of you.
 python -m pytest
 
 # Only the Selenium tests (best for the live demo)
@@ -90,7 +90,7 @@ TC01–TC09 are exactly the test cases in our project document. File: `tests/ui/
 Every Selenium test follows the workflow from our document:
 **Launch browser → Open HMS → Locate elements → Perform actions → Submit → Verify result → Record result**
 
-Besides Selenium, the project also has 68 PyTest tests at other testing levels:
+Besides Selenium, the project also has 85 PyTest tests at other testing levels:
 
 | File | Level | What it checks |
 |---|---|---|
@@ -99,7 +99,27 @@ Besides Selenium, the project also has 68 PyTest tests at other testing levels:
 | `tests/test_routes.py` | Functional | HTTP requests to every page, without a browser |
 | `tests/ui/test_selenium_hms.py` | System / UI | Real Chrome browser controlled by Selenium |
 
-## 5. Project structure
+## 5. Defects found by testing (and fixed)
+
+We also did **exploratory testing**: we tried to break the app on purpose with wrong, strange and dangerous inputs.
+These defects were found, fixed, and a **regression test** was added for each one so it can never come back:
+
+| # | Defect found | Severity | Fix |
+|---|---|---|---|
+| 1 | Typing `nan` as a doctor's fee **crashed the server** (500 error) | High | Numbers must be real, finite numbers |
+| 2 | `inf` (infinity) was accepted as a bill amount | Medium | Same fix as #1 |
+| 3 | Same patient could be booked with two doctors at the same time | Medium | New business rule + test |
+| 4 | Deleting / cancelling / paying something that does not exist still showed "success" | Medium | Shows "not found" error |
+| 5 | Database connections were never closed (warnings on Python 3.13) | Medium | Connections closed after every use |
+| 6 | A name made only of dots (`..`) was accepted | Low | Name needs at least 2 letters |
+| 7 | A 5000-character name was accepted | Low | Max length: name 50, text 200 |
+| 8 | Phone accepted non-English digits (`９８７…`) | Low | Only 0-9 allowed |
+| 9 | Selenium tests failed randomly about 1 run in 3 (**flaky test**) | Medium | Wait for the page to finish loading, ignoring Chrome's temporary errors |
+
+Checks that **passed** (no defect): HTML/JavaScript injection (XSS) is blocked, SQL injection in login and search is blocked,
+past appointment dates and invalid time slots are rejected, and an unknown page shows 404.
+
+## 6. Project structure
 
 ```
 app.py                  Flask web app: all pages and routes
@@ -119,7 +139,7 @@ docs/                   Test report and screenshots
 presentation/           PowerPoint presentation
 ```
 
-## 6. Explaining the code (quick guide)
+## 7. Explaining the code (quick guide)
 
 1. **User opens a page** → `app.py` has a function for every URL (`@app.route("/patients")`).
 2. **User submits a form** → `app.py` calls `database.py`, e.g. `db.add_patient(...)`.

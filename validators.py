@@ -5,18 +5,25 @@ Every function here checks user input and raises ValueError with a
 friendly message when something is wrong. Keeping the rules in one
 small file makes them easy to unit-test with PyTest.
 """
+import math
 from datetime import date, datetime
 
 GENDERS = ("Male", "Female", "Other")
 TIME_SLOTS = ("09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00")
+MAX_NAME_LENGTH = 50
+MAX_TEXT_LENGTH = 200
 
 
 def validate_name(name):
     name = (name or "").strip()
     if len(name) < 2:
         raise ValueError("Name must have at least 2 characters.")
+    if len(name) > MAX_NAME_LENGTH:
+        raise ValueError(f"Name cannot be longer than {MAX_NAME_LENGTH} characters.")
     if not all(ch.isalpha() or ch in " .'" for ch in name):
         raise ValueError("Name can only contain letters, spaces, dots and apostrophes.")
+    if sum(ch.isalpha() for ch in name) < 2:
+        raise ValueError("Name must have at least 2 letters.")
     return name
 
 
@@ -38,16 +45,25 @@ def validate_gender(gender):
 
 def validate_phone(phone):
     phone = (phone or "").strip()
-    if len(phone) != 10 or not phone.isdigit():
+    # isascii() makes sure only the normal digits 0-9 are accepted
+    if len(phone) != 10 or not (phone.isascii() and phone.isdigit()):
         raise ValueError("Phone number must be exactly 10 digits.")
     return phone
 
 
-def validate_amount(amount, field="Amount"):
+def _to_number(value, field):
+    """Converts text to a number. Rejects text like 'abc', 'nan' and 'inf'."""
     try:
-        amount = float(amount)
+        number = float(value)
     except (TypeError, ValueError):
         raise ValueError(f"{field} must be a number.")
+    if not math.isfinite(number):
+        raise ValueError(f"{field} must be a number.")
+    return number
+
+
+def validate_amount(amount, field="Amount"):
+    amount = _to_number(amount, field)
     if amount <= 0:
         raise ValueError(f"{field} must be greater than 0.")
     return round(amount, 2)
@@ -55,10 +71,7 @@ def validate_amount(amount, field="Amount"):
 
 def validate_charge(amount, field):
     """Like validate_amount, but 0 is allowed (e.g. no treatment charge)."""
-    try:
-        amount = float(amount or 0)
-    except (TypeError, ValueError):
-        raise ValueError(f"{field} must be a number.")
+    amount = _to_number(amount or 0, field)
     if amount < 0:
         raise ValueError(f"{field} cannot be negative.")
     return round(amount, 2)
@@ -79,6 +92,8 @@ def validate_text(value, field):
     value = (value or "").strip()
     if not value:
         raise ValueError(f"{field} is required.")
+    if len(value) > MAX_TEXT_LENGTH:
+        raise ValueError(f"{field} cannot be longer than {MAX_TEXT_LENGTH} characters.")
     return value
 
 
