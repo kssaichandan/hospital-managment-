@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Appointments</h1>
+
+<h3>Book Appointment</h3>
+<form method="post" class="form-row" id="appointment-form" novalidate>
+  <select id="appt-patient" name="patient_id">
+    <option value="">-- Select patient --</option>
+    {% for p in patients %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+  </select>
+  <select id="appt-doctor" name="doctor_id">
+    <option value="">-- Select doctor --</option>
+    {% for d in doctors %}
+    <option value="{{ d.id }}">{{ d.name }} ({{ d.specialization }}){% if not d.available %} - Not Available{% endif %}</option>
+    {% endfor %}
+  </select>
+  <input id="appt-date" name="date" type="date" min="{{ today }}">
+  <select id="appt-time" name="time">
+    {% for t in time_slots %}<option>{{ t }}</option>{% endfor %}
+  </select>
+  <button id="book-btn" type="submit">Book Appointment</button>
+</form>
+
+<table id="appointments-table">
+  <tr><th>ID</th><th>Patient</th><th>Doctor</th><th>Date</th><th>Time</th><th>Status</th><th>Actions</th></tr>
+  {% for a in appointments %}
+  <tr id="appointment-row-{{ a.id }}">
+    <td>{{ a.id }}</td><td>{{ a.patient_name }}</td><td>{{ a.doctor_name }}</td>
+    <td>{{ a.date }}</td><td>{{ a.time }}</td>
+    <td><span class="badge {{ a.status|lower }}">{{ a.status }}</span></td>
+    <td>
+      {% if a.status == 'Scheduled' %}
+      <form method="post" action="{{ url_for('cancel_appointment', appointment_id=a.id) }}">
+        <button class="danger" id="cancel-appointment-{{ a.id }}" type="submit">Cancel</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7" class="muted">No appointments yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

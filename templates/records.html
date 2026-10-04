@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Medical Records</h1>
+
+<h3>Add Medical Record</h3>
+<form method="post" class="form-row" id="record-form" novalidate>
+  <select id="record-patient" name="patient_id">
+    <option value="">-- Select patient --</option>
+    {% for p in patients %}<option value="{{ p.id }}" {% if p.id == selected %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+  </select>
+  <input id="record-date" name="visit_date" type="date" max="{{ today }}" value="{{ today }}">
+  <input id="record-diagnosis" name="diagnosis" placeholder="Diagnosis">
+  <input id="record-treatment" name="treatment" placeholder="Treatment details">
+  <input id="record-prescription" name="prescription" placeholder="Prescription">
+  <button id="add-record-btn" type="submit">Save Record</button>
+</form>
+
+<form method="get" class="search">
+  <select id="history-patient" name="patient_id">
+    <option value="">-- All patients --</option>
+    {% for p in patients %}<option value="{{ p.id }}" {% if p.id == selected %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+  </select>
+  <button id="history-btn" type="submit">View Patient History</button>
+</form>
+
+<table id="records-table">
+  <tr><th>Visit Date</th><th>Patient</th><th>Diagnosis</th><th>Treatment</th><th>Prescription</th></tr>
+  {% for r in records %}
+  <tr>
+    <td>{{ r.visit_date }}</td><td>{{ r.patient_name }}</td><td>{{ r.diagnosis }}</td>
+    <td>{{ r.treatment }}</td><td>{{ r.prescription }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="muted">No medical records found.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

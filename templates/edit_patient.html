@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Update Patient #{{ patient.id }}</h1>
+
+<form method="post" class="form-col" id="edit-patient-form" novalidate>
+  <label for="patient-name">Full name</label>
+  <input id="patient-name" name="name" value="{{ patient.name }}">
+  <label for="patient-age">Age</label>
+  <input id="patient-age" name="age" type="number" value="{{ patient.age }}">
+  <label for="patient-gender">Gender</label>
+  <select id="patient-gender" name="gender">
+    {% for g in genders %}<option {% if g == patient.gender %}selected{% endif %}>{{ g }}</option>{% endfor %}
+  </select>
+  <label for="patient-phone">Phone</label>
+  <input id="patient-phone" name="phone" value="{{ patient.phone }}">
+  <label for="patient-disease">Disease / Problem</label>
+  <input id="patient-disease" name="disease" value="{{ patient.disease }}">
+  <div class="buttons">
+    <button id="update-patient-btn" type="submit">Update Patient</button>
+    <a class="link" href="{{ url_for('patients') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

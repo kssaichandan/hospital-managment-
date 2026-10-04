@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Doctors</h1>
+
+<h3>Add New Doctor</h3>
+<form method="post" class="form-row" id="doctor-form" novalidate>
+  <input id="doctor-name" name="name" placeholder="Doctor name">
+  <input id="doctor-specialization" name="specialization" placeholder="Specialization">
+  <input id="doctor-phone" name="phone" placeholder="Phone (10 digits)">
+  <input id="doctor-fee" name="fee" type="number" step="0.01" placeholder="Consultation fee (Rs)">
+  <button id="add-doctor-btn" type="submit">Add Doctor</button>
+</form>
+
+<form method="get" class="search">
+  <input id="doctor-search-box" name="search" value="{{ search }}" placeholder="Search by name or specialization">
+  <button id="doctor-search-btn" type="submit">Search</button>
+  {% if search %}<a class="link" href="{{ url_for('doctors') }}">Show all</a>{% endif %}
+</form>
+
+<table id="doctors-table">
+  <tr><th>ID</th><th>Name</th><th>Specialization</th><th>Phone</th><th>Fee (Rs)</th><th>Availability</th><th>Actions</th></tr>
+  {% for d in doctors %}
+  <tr id="doctor-row-{{ d.id }}">
+    <td>{{ d.id }}</td><td>{{ d.name }}</td><td>{{ d.specialization }}</td>
+    <td>{{ d.phone }}</td><td>{{ "%.2f"|format(d.fee) }}</td>
+    <td>
+      {% if d.available %}<span class="badge paid">Available</span>
+      {% else %}<span class="badge cancelled">Not Available</span>{% endif %}
+    </td>
+    <td class="actions">
+      <a class="btn" id="edit-doctor-{{ d.id }}" href="{{ url_for('edit_doctor', doctor_id=d.id) }}">Edit</a>
+      <form method="post" action="{{ url_for('toggle_availability', doctor_id=d.id) }}">
+        <button class="secondary" id="toggle-doctor-{{ d.id }}" type="submit">
+          {% if d.available %}Mark Unavailable{% else %}Mark Available{% endif %}
+        </button>
+      </form>
+      <form method="post" action="{{ url_for('delete_doctor', doctor_id=d.id) }}">
+        <button class="danger" id="delete-doctor-{{ d.id }}" type="submit">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7" class="muted">No doctors found.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="cards">
+  <a class="card" href="{{ url_for('patients') }}">
+    <span class="number" id="stat-patients">{{ stats.patients }}</span>
+    <span>Patients</span>
+  </a>
+  <a class="card" href="{{ url_for('doctors') }}">
+    <span class="number" id="stat-doctors">{{ stats.doctors }}</span>
+    <span>Doctors</span>
+  </a>
+  <a class="card" href="{{ url_for('appointments') }}">
+    <span class="number" id="stat-appointments">{{ stats.appointments }}</span>
+    <span>Scheduled Appointments</span>
+  </a>
+  <a class="card" href="{{ url_for('records') }}">
+    <span class="number" id="stat-records">{{ stats.records }}</span>
+    <span>Medical Records</span>
+  </a>
+  <a class="card" href="{{ url_for('billing') }}">
+    <span class="number" id="stat-unpaid">{{ stats.unpaid_bills }}</span>
+    <span>Unpaid Bills</span>
+  </a>
+</div>
+{% endblock %}

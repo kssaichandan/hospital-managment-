@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Hospital Management System{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  {% if session.user %}
+  <nav class="navbar">
+    <span class="brand">+ City Hospital</span>
+    <a id="nav-dashboard" href="{{ url_for('dashboard') }}">Dashboard</a>
+    <a id="nav-patients" href="{{ url_for('patients') }}">Patients</a>
+    <a id="nav-doctors" href="{{ url_for('doctors') }}">Doctors</a>
+    <a id="nav-appointments" href="{{ url_for('appointments') }}">Appointments</a>
+    <a id="nav-records" href="{{ url_for('records') }}">Medical Records</a>
+    <a id="nav-billing" href="{{ url_for('billing') }}">Billing</a>
+    <a id="nav-logout" class="logout" href="{{ url_for('logout') }}">Logout ({{ session.user }})</a>
+  </nav>
+  {% endif %}
+
+  <main class="container">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="flash {{ category }}" id="flash-{{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

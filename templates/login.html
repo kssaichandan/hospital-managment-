@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Login - Hospital Management System{% endblock %}
+{% block content %}
+<div class="login-box">
+  <h1>+ City Hospital</h1>
+  <p class="muted">Hospital Management System</p>
+  <form method="post" id="login-form" novalidate>
+    <label for="username">Username</label>
+    <input id="username" name="username">
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password">
+    <button id="login" type="submit">Login</button>
+  </form>
+  <p class="muted small">Demo login: admin / admin123</p>
+</div>
+{% endblock %}
