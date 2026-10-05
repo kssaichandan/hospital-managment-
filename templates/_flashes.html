@@ -1,0 +1,7 @@
+{% from "_icons.html" import icon %}
+{% for category, message in get_flashed_messages(with_categories=true) %}
+  <div class="alert {{ category }}" id="flash-{{ category }}" role="alert">
+    {{ icon("check-circle" if category == "success" else "alert", 18) }}
+    <span>{{ message }}</span>
+  </div>
+{% endfor %}

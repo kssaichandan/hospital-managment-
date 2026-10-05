@@ -38,6 +38,12 @@ def live_server(tmp_path):
 def browser():
     options = webdriver.ChromeOptions()
     options.add_argument("--window-size=1366,800")
+    # Stop Chrome's "save password?" pop-ups from covering the page
+    options.add_experimental_option("prefs", {
+        "credentials_enable_service": False,
+        "profile.password_manager_enabled": False,
+        "profile.password_manager_leak_detection": False,
+    })
     if os.environ.get("HEADLESS") == "1":
         options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")

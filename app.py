@@ -21,6 +21,11 @@ def create_app(db_path="hospital.db", seed=False):
         db.seed_sample_data()
     app.config["DB"] = db
 
+    @app.context_processor
+    def page_info():
+        """Values every page can use (today's date in the page header)."""
+        return {"today_label": date.today().strftime("%A, %d %B %Y")}
+
     def login_required(view):
         @wraps(view)
         def wrapper(*args, **kwargs):
@@ -63,7 +68,10 @@ def create_app(db_path="hospital.db", seed=False):
     @app.route("/dashboard")
     @login_required
     def dashboard():
-        return render_template("dashboard.html", stats=db.get_stats())
+        today = date.today().isoformat()
+        upcoming = [a for a in db.get_appointments()
+                    if a["status"] == "Scheduled" and a["date"] >= today][:5]
+        return render_template("dashboard.html", stats=db.get_stats(), upcoming=upcoming)
 
     # ---------------- Patients ----------------
     @app.route("/patients", methods=["GET", "POST"])

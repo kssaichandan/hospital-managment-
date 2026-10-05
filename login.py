@@ -4,7 +4,7 @@ written in Python.
 
 Steps:
   1. Start the app in one terminal:   python app.py
-  2. Run this in another terminal:    python selenium_login_demo.py
+  2. Run this in another terminal:    python login.py
 """
 import time
 

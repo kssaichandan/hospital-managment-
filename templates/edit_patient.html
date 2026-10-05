@@ -1,23 +1,49 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block heading %}Update Patient #{{ patient.id }}{% endblock %}
+{% block subtitle %}Change the details below and save.{% endblock %}
 {% block content %}
-<h1>Update Patient #{{ patient.id }}</h1>
+<a class="back-link" href="{{ url_for('patients') }}">{{ icon("arrow-left", 16) }}Back to patients</a>
 
-<form method="post" class="form-col" id="edit-patient-form" novalidate>
-  <label for="patient-name">Full name</label>
-  <input id="patient-name" name="name" value="{{ patient.name }}">
-  <label for="patient-age">Age</label>
-  <input id="patient-age" name="age" type="number" value="{{ patient.age }}">
-  <label for="patient-gender">Gender</label>
-  <select id="patient-gender" name="gender">
-    {% for g in genders %}<option {% if g == patient.gender %}selected{% endif %}>{{ g }}</option>{% endfor %}
-  </select>
-  <label for="patient-phone">Phone</label>
-  <input id="patient-phone" name="phone" value="{{ patient.phone }}">
-  <label for="patient-disease">Disease / Problem</label>
-  <input id="patient-disease" name="disease" value="{{ patient.disease }}">
-  <div class="buttons">
-    <button id="update-patient-btn" type="submit">Update Patient</button>
-    <a class="link" href="{{ url_for('patients') }}">Cancel</a>
+<section class="panel panel-narrow">
+  <div class="panel-header">
+    <div class="person">
+      <span class="avatar avatar-lg tone-{{ patient.id % 5 }}">{{ (patient.name.split()|map("first")|join)[:2]|upper }}</span>
+      <div>
+        <h2>{{ patient.name }}</h2>
+        <p>Patient ID #{{ patient.id }}</p>
+      </div>
+    </div>
   </div>
-</form>
+  <form method="post" class="panel-body" id="edit-patient-form" novalidate>
+    <div class="form-grid form-grid-2">
+      <div class="field">
+        <label for="patient-name">Full name</label>
+        <input id="patient-name" name="name" value="{{ patient.name }}">
+      </div>
+      <div class="field">
+        <label for="patient-phone">Phone</label>
+        <input id="patient-phone" name="phone" value="{{ patient.phone }}">
+      </div>
+      <div class="field">
+        <label for="patient-age">Age</label>
+        <input id="patient-age" name="age" type="number" value="{{ patient.age }}">
+      </div>
+      <div class="field">
+        <label for="patient-gender">Gender</label>
+        <select id="patient-gender" name="gender">
+          {% for g in genders %}<option {% if g == patient.gender %}selected{% endif %}>{{ g }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field field-full">
+        <label for="patient-disease">Disease / Problem</label>
+        <input id="patient-disease" name="disease" value="{{ patient.disease }}">
+      </div>
+    </div>
+    <div class="form-actions">
+      <a class="btn btn-ghost" href="{{ url_for('patients') }}">Cancel</a>
+      <button id="update-patient-btn" class="btn btn-primary" type="submit">{{ icon("check", 16) }}Update Patient</button>
+    </div>
+  </form>
+</section>
 {% endblock %}

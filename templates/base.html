@@ -1,30 +1,65 @@
+{% from "_icons.html" import icon %}
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Hospital Management System{% endblock %}</title>
+  <title>{% block title %}{{ self.heading() }} · City Hospital HMS{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230d9488'/%3E%3Cpath d='M13 7h6v6h6v6h-6v6h-6v-6H7v-6h6z' fill='white'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  {% if session.user %}
-  <nav class="navbar">
-    <span class="brand">+ City Hospital</span>
-    <a id="nav-dashboard" href="{{ url_for('dashboard') }}">Dashboard</a>
-    <a id="nav-patients" href="{{ url_for('patients') }}">Patients</a>
-    <a id="nav-doctors" href="{{ url_for('doctors') }}">Doctors</a>
-    <a id="nav-appointments" href="{{ url_for('appointments') }}">Appointments</a>
-    <a id="nav-records" href="{{ url_for('records') }}">Medical Records</a>
-    <a id="nav-billing" href="{{ url_for('billing') }}">Billing</a>
-    <a id="nav-logout" class="logout" href="{{ url_for('logout') }}">Logout ({{ session.user }})</a>
-  </nav>
-  {% endif %}
+{% block body %}
+{% set ep = request.endpoint or "" %}
+{% set menu = [
+  ("dashboard", "nav-dashboard", "Dashboard", "dashboard", ["dashboard"]),
+  ("patients", "nav-patients", "Patients", "users", ["patients", "edit_patient"]),
+  ("doctors", "nav-doctors", "Doctors", "stethoscope", ["doctors", "edit_doctor"]),
+  ("appointments", "nav-appointments", "Appointments", "calendar", ["appointments"]),
+  ("records", "nav-records", "Medical Records", "file", ["records"]),
+  ("billing", "nav-billing", "Billing", "receipt", ["billing"]),
+] %}
+<div class="shell">
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('dashboard') }}">
+      <span class="brand-logo">{{ icon("heart-pulse", 20) }}</span>
+      <span class="brand-text"><strong>City Hospital</strong><small>Management System</small></span>
+    </a>
 
-  <main class="container">
-    {% for category, message in get_flashed_messages(with_categories=true) %}
-      <div class="flash {{ category }}" id="flash-{{ category }}">{{ message }}</div>
-    {% endfor %}
-    {% block content %}{% endblock %}
-  </main>
+    <p class="nav-label">Main menu</p>
+    <nav class="nav">
+      {% for endpoint, element_id, label, icon_name, active_on in menu %}
+      <a id="{{ element_id }}" href="{{ url_for(endpoint) }}" class="{{ 'active' if ep in active_on }}">
+        {{ icon(icon_name) }}<span>{{ label }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+
+    <div class="sidebar-user">
+      <span class="avatar avatar-lg">{{ (session.user or "?")[:1]|upper }}</span>
+      <span class="user-text"><strong>{{ session.user }}</strong><small>Administrator</small></span>
+      <a id="nav-logout" class="logout" href="{{ url_for('logout') }}" title="Logout">
+        {{ icon("logout", 16) }}<span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="page-header">
+      <div>
+        <h1>{% block heading %}{% endblock %}</h1>
+        <p class="subtitle">{% block subtitle %}{% endblock %}</p>
+      </div>
+      <span class="date-chip">{{ icon("calendar", 16) }}{{ today_label }}</span>
+    </header>
+
+    <main class="content">
+      {% include "_flashes.html" %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}{% endblock %}
 </body>
 </html>

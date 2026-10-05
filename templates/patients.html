@@ -1,41 +1,90 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block heading %}Patients{% endblock %}
+{% block subtitle %}Register new patients, update their details and find them quickly.{% endblock %}
 {% block content %}
-<h1>Patients</h1>
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <h2>Add New Patient</h2>
+      <p>All fields are required. Phone must be exactly 10 digits.</p>
+    </div>
+  </div>
+  <form method="post" class="panel-body form-inline" id="patient-form" novalidate>
+    <div class="form-grid">
+      <div class="field">
+        <label for="patient-name">Full name</label>
+        <input id="patient-name" name="name" placeholder="e.g. Anjali Mehta">
+      </div>
+      <div class="field field-sm">
+        <label for="patient-age">Age</label>
+        <input id="patient-age" name="age" type="number" placeholder="Years">
+      </div>
+      <div class="field field-sm">
+        <label for="patient-gender">Gender</label>
+        <select id="patient-gender" name="gender">
+          {% for g in genders %}<option>{{ g }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="patient-phone">Phone</label>
+        <input id="patient-phone" name="phone" placeholder="10 digits">
+      </div>
+      <div class="field">
+        <label for="patient-disease">Disease / Problem</label>
+        <input id="patient-disease" name="disease" placeholder="e.g. Headache">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button id="add-patient-btn" class="btn btn-primary" type="submit">{{ icon("plus", 16) }}Add Patient</button>
+    </div>
+  </form>
+</section>
 
-<h3>Add New Patient</h3>
-<form method="post" class="form-row" id="patient-form" novalidate>
-  <input id="patient-name" name="name" placeholder="Full name">
-  <input id="patient-age" name="age" type="number" placeholder="Age">
-  <select id="patient-gender" name="gender">
-    {% for g in genders %}<option>{{ g }}</option>{% endfor %}
-  </select>
-  <input id="patient-phone" name="phone" placeholder="Phone (10 digits)">
-  <input id="patient-disease" name="disease" placeholder="Disease / Problem">
-  <button id="add-patient-btn" type="submit">Add Patient</button>
-</form>
-
-<form method="get" class="search">
-  <input id="search-box" name="search" value="{{ search }}" placeholder="Search by Patient ID or name">
-  <button id="search-btn" type="submit">Search</button>
-  {% if search %}<a class="link" id="clear-search" href="{{ url_for('patients') }}">Show all</a>{% endif %}
-</form>
-
-<table id="patients-table">
-  <tr><th>ID</th><th>Name</th><th>Age</th><th>Gender</th><th>Phone</th><th>Disease</th><th>Actions</th></tr>
-  {% for p in patients %}
-  <tr id="patient-row-{{ p.id }}">
-    <td>{{ p.id }}</td><td>{{ p.name }}</td><td>{{ p.age }}</td><td>{{ p.gender }}</td>
-    <td>{{ p.phone }}</td><td>{{ p.disease }}</td>
-    <td class="actions">
-      <a class="btn" id="edit-patient-{{ p.id }}" href="{{ url_for('edit_patient', patient_id=p.id) }}">Edit</a>
-      <a class="btn secondary" href="{{ url_for('records', patient_id=p.id) }}">Records</a>
-      <form method="post" action="{{ url_for('delete_patient', patient_id=p.id) }}">
-        <button class="danger" id="delete-patient-{{ p.id }}" type="submit">Delete</button>
-      </form>
-    </td>
-  </tr>
-  {% else %}
-  <tr><td colspan="7" class="muted">No patients found.</td></tr>
-  {% endfor %}
-</table>
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <h2>All Patients <span class="count">{{ patients|length }}</span></h2>
+      <p>{% if search %}Showing results for &ldquo;{{ search }}&rdquo;{% else %}Everyone registered in the hospital{% endif %}</p>
+    </div>
+    <form method="get" class="search">
+      <div class="input-icon">{{ icon("search", 16) }}<input id="search-box" name="search" value="{{ search }}" placeholder="Search by Patient ID or name"></div>
+      <button id="search-btn" class="btn btn-dark" type="submit">Search</button>
+      {% if search %}<a class="btn btn-ghost" id="clear-search" href="{{ url_for('patients') }}">Show all</a>{% endif %}
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table id="patients-table">
+      <thead><tr><th>ID</th><th>Name</th><th>Age</th><th>Gender</th><th>Phone</th><th>Disease</th><th class="right">Actions</th></tr></thead>
+      <tbody>
+      {% for p in patients %}
+        <tr id="patient-row-{{ p.id }}">
+          <td><span class="id">#{{ p.id }}</span></td>
+          <td>
+            <span class="person">
+              <span class="avatar tone-{{ p.id % 5 }}">{{ (p.name.split()|map("first")|join)[:2]|upper }}</span>
+              <span class="strong">{{ p.name }}</span>
+            </span>
+          </td>
+          <td>{{ p.age }}</td>
+          <td>{{ p.gender }}</td>
+          <td class="mono">{{ p.phone }}</td>
+          <td><span class="tag">{{ p.disease }}</span></td>
+          <td>
+            <div class="row-actions">
+              <a class="btn btn-outline btn-sm" id="edit-patient-{{ p.id }}" href="{{ url_for('edit_patient', patient_id=p.id) }}">{{ icon("pencil", 14) }}Edit</a>
+              <a class="btn btn-outline btn-sm" href="{{ url_for('records', patient_id=p.id) }}">{{ icon("history", 14) }}Records</a>
+              <form method="post" action="{{ url_for('delete_patient', patient_id=p.id) }}">
+                <button class="btn btn-danger btn-sm" id="delete-patient-{{ p.id }}" type="submit">{{ icon("trash", 14) }}Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="empty"><div class="empty-state">{{ icon("inbox", 28) }}<p>No patients found.</p><small>Add a patient using the form above.</small></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 {% endblock %}

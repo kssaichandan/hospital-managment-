@@ -1,19 +1,43 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block heading %}Update Doctor #{{ doctor.id }}{% endblock %}
+{% block subtitle %}Change the details below and save.{% endblock %}
 {% block content %}
-<h1>Update Doctor #{{ doctor.id }}</h1>
+<a class="back-link" href="{{ url_for('doctors') }}">{{ icon("arrow-left", 16) }}Back to doctors</a>
 
-<form method="post" class="form-col" id="edit-doctor-form" novalidate>
-  <label for="doctor-name">Doctor name</label>
-  <input id="doctor-name" name="name" value="{{ doctor.name }}">
-  <label for="doctor-specialization">Specialization</label>
-  <input id="doctor-specialization" name="specialization" value="{{ doctor.specialization }}">
-  <label for="doctor-phone">Phone</label>
-  <input id="doctor-phone" name="phone" value="{{ doctor.phone }}">
-  <label for="doctor-fee">Consultation fee (Rs)</label>
-  <input id="doctor-fee" name="fee" type="number" step="0.01" value="{{ doctor.fee }}">
-  <div class="buttons">
-    <button id="update-doctor-btn" type="submit">Update Doctor</button>
-    <a class="link" href="{{ url_for('doctors') }}">Cancel</a>
+<section class="panel panel-narrow">
+  <div class="panel-header">
+    <div class="person">
+      <span class="avatar avatar-lg tone-{{ doctor.id % 5 }}">{{ icon("stethoscope", 18) }}</span>
+      <div>
+        <h2>{{ doctor.name }}</h2>
+        <p>Doctor ID #{{ doctor.id }}</p>
+      </div>
+    </div>
   </div>
-</form>
+  <form method="post" class="panel-body" id="edit-doctor-form" novalidate>
+    <div class="form-grid form-grid-2">
+      <div class="field">
+        <label for="doctor-name">Doctor name</label>
+        <input id="doctor-name" name="name" value="{{ doctor.name }}">
+      </div>
+      <div class="field">
+        <label for="doctor-specialization">Specialization</label>
+        <input id="doctor-specialization" name="specialization" value="{{ doctor.specialization }}">
+      </div>
+      <div class="field">
+        <label for="doctor-phone">Phone</label>
+        <input id="doctor-phone" name="phone" value="{{ doctor.phone }}">
+      </div>
+      <div class="field">
+        <label for="doctor-fee">Consultation fee (₹)</label>
+        <input id="doctor-fee" name="fee" type="number" step="0.01" value="{{ doctor.fee }}">
+      </div>
+    </div>
+    <div class="form-actions">
+      <a class="btn btn-ghost" href="{{ url_for('doctors') }}">Cancel</a>
+      <button id="update-doctor-btn" class="btn btn-primary" type="submit">{{ icon("check", 16) }}Update Doctor</button>
+    </div>
+  </form>
+</section>
 {% endblock %}

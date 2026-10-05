@@ -1,26 +1,69 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block heading %}Dashboard{% endblock %}
+{% block subtitle %}Welcome back, {{ session.user }}. Here is today's overview of the hospital.{% endblock %}
 {% block content %}
-<h1>Dashboard</h1>
-<div class="cards">
-  <a class="card" href="{{ url_for('patients') }}">
-    <span class="number" id="stat-patients">{{ stats.patients }}</span>
-    <span>Patients</span>
+{% set cards = [
+  ("patients", "stat-patients", stats.patients, "Patients", "Registered patients", "users", "teal"),
+  ("doctors", "stat-doctors", stats.doctors, "Doctors", "On the hospital staff", "stethoscope", "blue"),
+  ("appointments", "stat-appointments", stats.appointments, "Scheduled Appointments", "Waiting to be seen", "calendar", "violet"),
+  ("records", "stat-records", stats.records, "Medical Records", "Visits documented", "file", "amber"),
+  ("billing", "stat-unpaid", stats.unpaid_bills, "Unpaid Bills", "Payment pending", "receipt", "rose"),
+] %}
+<div class="stats">
+  {% for endpoint, element_id, number, label, hint, icon_name, tone in cards %}
+  <a class="stat" href="{{ url_for(endpoint) }}">
+    <span class="stat-icon {{ tone }}">{{ icon(icon_name, 20) }}</span>
+    <span class="stat-body">
+      <span class="stat-label">{{ label }}</span>
+      <span class="stat-number" id="{{ element_id }}">{{ number }}</span>
+      <span class="stat-hint">{{ hint }}</span>
+    </span>
   </a>
-  <a class="card" href="{{ url_for('doctors') }}">
-    <span class="number" id="stat-doctors">{{ stats.doctors }}</span>
-    <span>Doctors</span>
-  </a>
-  <a class="card" href="{{ url_for('appointments') }}">
-    <span class="number" id="stat-appointments">{{ stats.appointments }}</span>
-    <span>Scheduled Appointments</span>
-  </a>
-  <a class="card" href="{{ url_for('records') }}">
-    <span class="number" id="stat-records">{{ stats.records }}</span>
-    <span>Medical Records</span>
-  </a>
-  <a class="card" href="{{ url_for('billing') }}">
-    <span class="number" id="stat-unpaid">{{ stats.unpaid_bills }}</span>
-    <span>Unpaid Bills</span>
-  </a>
+  {% endfor %}
+</div>
+
+<div class="grid-2">
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Upcoming appointments</h2>
+        <p>The next scheduled visits</p>
+      </div>
+      <a class="btn btn-outline btn-sm" href="{{ url_for('appointments') }}">View all {{ icon("arrow-right", 14) }}</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Patient</th><th>Doctor</th><th>Date</th><th>Time</th></tr></thead>
+        <tbody>
+        {% for a in upcoming %}
+          <tr>
+            <td class="strong">{{ a.patient_name }}</td>
+            <td>{{ a.doctor_name }}</td>
+            <td>{{ a.date }}</td>
+            <td><span class="time">{{ icon("clock", 14) }}{{ a.time }}</span></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4" class="empty"><div class="empty-state">{{ icon("calendar", 28) }}<p>No upcoming appointments.</p></div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Quick actions</h2>
+        <p>Jump straight to common tasks</p>
+      </div>
+    </div>
+    <div class="quick-actions">
+      <a href="{{ url_for('patients') }}"><span class="stat-icon teal">{{ icon("users") }}</span><span><strong>Register a patient</strong><small>Add name, age, phone and problem</small></span>{{ icon("arrow-right", 16) }}</a>
+      <a href="{{ url_for('appointments') }}"><span class="stat-icon violet">{{ icon("calendar-check") }}</span><span><strong>Book an appointment</strong><small>Pick a doctor, date and time</small></span>{{ icon("arrow-right", 16) }}</a>
+      <a href="{{ url_for('records') }}"><span class="stat-icon amber">{{ icon("file") }}</span><span><strong>Add a medical record</strong><small>Diagnosis, treatment, prescription</small></span>{{ icon("arrow-right", 16) }}</a>
+      <a href="{{ url_for('billing') }}"><span class="stat-icon rose">{{ icon("receipt") }}</span><span><strong>Generate a bill</strong><small>Total is calculated automatically</small></span>{{ icon("arrow-right", 16) }}</a>
+    </div>
+  </section>
 </div>
 {% endblock %}

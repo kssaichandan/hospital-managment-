@@ -9,9 +9,10 @@
 
 A simple web-based Hospital Management System (HMS), tested automatically with **Selenium WebDriver**.
 
-- Presentation (9 slides, with speaker notes): [`presentation/Hospital_Management_System_Selenium_Testing.pptx`](presentation/Hospital_Management_System_Selenium_Testing.pptx)
+- Presentation (10 slides, with speaker notes): [`presentation/Hospital_Management_System_Selenium_Testing.pptx`](presentation/Hospital_Management_System_Selenium_Testing.pptx)
 - Test report: [`docs/test-report.html`](docs/test-report.html) (open it in a browser)
 - Screenshots: [`docs/screenshots/`](docs/screenshots/)
+- **Giving the live demo? Start with [section 4](#4-live-demo-step-by-step).**
 
 ---
 
@@ -46,10 +47,10 @@ Three sample doctors are added automatically the first time you run it. Data is 
 # All 98 tests (13 Selenium + 85 PyTest). Chrome opens and runs the UI tests in front of you.
 python -m pytest
 
-# Only the Selenium tests (best for the live demo)
+# Only the Selenium tests
 python -m pytest tests/ui
 
-# Slow the Selenium tests down so the class can follow (1.5 s pause after each test)
+# Slow the Selenium tests down (1.5 s pause after each test)
 #   Windows (PowerShell):  $env:DEMO_DELAY="1.5"; python -m pytest tests/ui
 #   Mac / Linux:           DEMO_DELAY=1.5 python -m pytest tests/ui
 
@@ -60,14 +61,39 @@ python -m pytest --html=docs/test-report.html --self-contained-html
 You do **not** need the app running for `pytest`: the tests start their own copy of the app with an empty database.
 Selenium 4 downloads the correct ChromeDriver automatically.
 
-**The simple Selenium example from our document** (needs the app running in another terminal):
+## 4. Live demo (step by step)
+
+**Full classroom script (what to do and what to say): [DEMO_GUIDE.md](DEMO_GUIDE.md)**
+
+| Command | What it does |
+|---|---|
+| `python app.py` | Starts our Hospital Management System |
+| `python login.py` | First Selenium test: logs in by itself (10 lines of code) |
+| `python run.py --step` | Selenium tests all 13 test cases in front of the class, one by one |
+| `python report.py` | Runs all 98 tests and opens the HTML test report |
+
+`run.py` lets the class **watch Selenium test the software** on the real running app:
+
+- every element Selenium finds is **highlighted with an orange box**
+- a **caption** at the bottom of the page says what Selenium is doing
+- the terminal prints every step **and the real Selenium command behind it**, e.g.
+  `driver.find_element(By.ID, "patient-name").send_keys("Ravi Teja")`
+- every check prints `CHECK PASSED` (or `CHECK FAILED` with a screenshot in `demo_failures/`)
+- at the end Chrome shows a **results page** (13 passed / 0 failed)
+
+| Typing into a field | A check passing | Results page |
+|---|---|---|
+| ![](docs/screenshots/demo_01_selenium_typing.png) | ![](docs/screenshots/demo_02_check_passed.png) | ![](docs/screenshots/demo_03_results_page.png) |
 
 ```bash
-python app.py                    # terminal 1
-python selenium_login_demo.py    # terminal 2  ->  "Login test PASSED - dashboard opened"
+python run.py              # all 13 test cases, presentation speed (about 2.5 minutes)
+python run.py --step       # wait for Enter before each test case (best for explaining)
+python run.py TC03 TC11    # only some test cases
+python run.py --fast       # full speed
+python run.py --list       # list the test cases
 ```
 
-## 4. Selenium test cases
+## 5. Selenium test cases
 
 TC01–TC09 are exactly the test cases in our project document. File: `tests/ui/test_selenium_hms.py`
 
@@ -99,7 +125,7 @@ Besides Selenium, the project also has 85 PyTest tests at other testing levels:
 | `tests/test_routes.py` | Functional | HTTP requests to every page, without a browser |
 | `tests/ui/test_selenium_hms.py` | System / UI | Real Chrome browser controlled by Selenium |
 
-## 5. Defects found by testing (and fixed)
+## 6. Defects found by testing (and fixed)
 
 We also did **exploratory testing**: we tried to break the app on purpose with wrong, strange and dangerous inputs.
 These defects were found, fixed, and a **regression test** was added for each one so it can never come back:
@@ -119,15 +145,18 @@ These defects were found, fixed, and a **regression test** was added for each on
 Checks that **passed** (no defect): HTML/JavaScript injection (XSS) is blocked, SQL injection in login and search is blocked,
 past appointment dates and invalid time slots are rejected, and an unknown page shows 404.
 
-## 6. Project structure
+## 7. Project structure
 
 ```
 app.py                  Flask web app: all pages and routes
 database.py             SQLite database: all create / read / update / delete operations
 validators.py           Input validation rules (raise an error message when input is wrong)
-templates/              HTML pages
+templates/              HTML pages (base.html = layout and sidebar, _icons.html = icons)
 static/style.css        Styling
-selenium_login_demo.py  Simple Selenium login example (same as in our document)
+login.py                Simple Selenium login test (same as in our document)
+run.py                  Live Selenium demo: highlights each step, prints the Selenium commands and PASS / FAIL
+report.py               Runs all 98 tests and opens the HTML test report
+DEMO_GUIDE.md           Classroom demo script
 tests/
   conftest.py           PyTest setup: fresh test database for every test
   test_validators.py    Unit tests
@@ -139,7 +168,7 @@ docs/                   Test report and screenshots
 presentation/           PowerPoint presentation
 ```
 
-## 7. Explaining the code (quick guide)
+## 8. Explaining the code (quick guide)
 
 1. **User opens a page** → `app.py` has a function for every URL (`@app.route("/patients")`).
 2. **User submits a form** → `app.py` calls `database.py`, e.g. `db.add_patient(...)`.

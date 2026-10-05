@@ -1,16 +1,51 @@
 {% extends "base.html" %}
-{% block title %}Login - Hospital Management System{% endblock %}
-{% block content %}
-<div class="login-box">
-  <h1>+ City Hospital</h1>
-  <p class="muted">Hospital Management System</p>
-  <form method="post" id="login-form" novalidate>
-    <label for="username">Username</label>
-    <input id="username" name="username">
-    <label for="password">Password</label>
-    <input id="password" name="password" type="password">
-    <button id="login" type="submit">Login</button>
-  </form>
-  <p class="muted small">Demo login: admin / admin123</p>
+{% from "_icons.html" import icon %}
+{% block title %}Login · City Hospital HMS{% endblock %}
+{% block body %}
+<div class="auth">
+  <section class="auth-hero">
+    <div class="brand">
+      <span class="brand-logo">{{ icon("heart-pulse", 20) }}</span>
+      <span class="brand-text"><strong>City Hospital</strong><small>Management System</small></span>
+    </div>
+
+    <div class="hero-copy">
+      <h2>Hospital care, organised in one place.</h2>
+      <p>Patients, doctors, appointments, medical records and billing &mdash; managed from a single dashboard.</p>
+      <ul class="hero-list">
+        <li>{{ icon("users") }} Patient &amp; doctor management</li>
+        <li>{{ icon("calendar-check") }} Appointments with no double booking</li>
+        <li>{{ icon("receipt") }} Medical records and automatic billing</li>
+      </ul>
+    </div>
+
+    <p class="hero-foot">{{ icon("shield") }} Software Testing Project &middot; Tested with Selenium WebDriver</p>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      <h1>Welcome back</h1>
+      <p class="muted">Sign in to continue to the hospital dashboard.</p>
+
+      {% include "_flashes.html" %}
+
+      <form method="post" id="login-form" novalidate>
+        <div class="field">
+          <label for="username">Username</label>
+          <div class="input-icon">{{ icon("user", 16) }}<input id="username" name="username" placeholder="Enter your username" autocomplete="username"></div>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-icon">{{ icon("lock", 16) }}<input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password"></div>
+        </div>
+        <button id="login" class="btn btn-primary btn-block" type="submit">Login</button>
+      </form>
+
+      <div class="demo-hint">
+        <strong>Demo login</strong>
+        <span>Username <code>admin</code> &middot; Password <code>admin123</code></span>
+      </div>
+    </div>
+  </section>
 </div>
 {% endblock %}

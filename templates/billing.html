@@ -1,37 +1,100 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block heading %}Billing{% endblock %}
+{% block subtitle %}Generate bills and track payments. Totals are calculated automatically.{% endblock %}
 {% block content %}
-<h1>Billing</h1>
+{% set billed = bills|sum(attribute="total") %}
+{% set collected = bills|selectattr("status", "equalto", "Paid")|sum(attribute="total") %}
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <h2>Generate Bill</h2>
+      <p>Total = consultation charge + treatment charge</p>
+    </div>
+  </div>
+  <form method="post" class="panel-body form-inline" id="bill-form" novalidate>
+    <div class="form-grid">
+      <div class="field">
+        <label for="bill-patient">Patient</label>
+        <select id="bill-patient" name="patient_id">
+          <option value="">Select patient</option>
+          {% for p in patients %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="bill-consultation">Consultation charge (₹)</label>
+        <input id="bill-consultation" name="consultation_charge" type="number" step="0.01" placeholder="e.g. 500">
+      </div>
+      <div class="field">
+        <label for="bill-treatment">Treatment charge (₹)</label>
+        <input id="bill-treatment" name="treatment_charge" type="number" step="0.01" placeholder="e.g. 1200">
+      </div>
+      <div class="field">
+        <label>Total</label>
+        <div class="total-preview" aria-live="polite">₹ <span id="total-preview">0.00</span></div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button id="create-bill-btn" class="btn btn-primary" type="submit">{{ icon("receipt", 16) }}Generate Bill</button>
+    </div>
+  </form>
+</section>
 
-<h3>Generate Bill</h3>
-<form method="post" class="form-row" id="bill-form" novalidate>
-  <select id="bill-patient" name="patient_id">
-    <option value="">-- Select patient --</option>
-    {% for p in patients %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
-  </select>
-  <input id="bill-consultation" name="consultation_charge" type="number" step="0.01" placeholder="Consultation charge (Rs)">
-  <input id="bill-treatment" name="treatment_charge" type="number" step="0.01" placeholder="Treatment charge (Rs)">
-  <button id="create-bill-btn" type="submit">Generate Bill</button>
-</form>
-
-<table id="bills-table">
-  <tr><th>Bill No</th><th>Patient</th><th>Consultation (Rs)</th><th>Treatment (Rs)</th><th>Total (Rs)</th><th>Payment Status</th><th>Actions</th></tr>
-  {% for b in bills %}
-  <tr id="bill-row-{{ b.id }}">
-    <td>{{ b.id }}</td><td>{{ b.patient_name }}</td>
-    <td>{{ "%.2f"|format(b.consultation_charge) }}</td>
-    <td>{{ "%.2f"|format(b.treatment_charge) }}</td>
-    <td class="total" id="bill-total-{{ b.id }}">{{ "%.2f"|format(b.total) }}</td>
-    <td><span class="badge {{ b.status|lower }}">{{ b.status }}</span></td>
-    <td>
-      {% if b.status == 'Unpaid' %}
-      <form method="post" action="{{ url_for('pay_bill', bill_id=b.id) }}">
-        <button id="pay-bill-{{ b.id }}" type="submit">Mark Paid</button>
-      </form>
-      {% endif %}
-    </td>
-  </tr>
-  {% else %}
-  <tr><td colspan="7" class="muted">No bills yet.</td></tr>
-  {% endfor %}
-</table>
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <h2>Bills <span class="count">{{ bills|length }}</span></h2>
+      <p>Mark a bill as paid once the patient has paid</p>
+    </div>
+    <div class="summary">
+      <span><small>Total billed</small><strong>₹ {{ "%.2f"|format(billed) }}</strong></span>
+      <span><small>Collected</small><strong class="good">₹ {{ "%.2f"|format(collected) }}</strong></span>
+      <span><small>Outstanding</small><strong class="due">₹ {{ "%.2f"|format(billed - collected) }}</strong></span>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table id="bills-table">
+      <thead><tr><th>Bill No</th><th>Patient</th><th class="right">Consultation (₹)</th><th class="right">Treatment (₹)</th><th class="right">Total (₹)</th><th>Payment Status</th><th class="right">Actions</th></tr></thead>
+      <tbody>
+      {% for b in bills %}
+        <tr id="bill-row-{{ b.id }}">
+          <td><span class="id">#{{ b.id }}</span></td>
+          <td class="strong">{{ b.patient_name }}</td>
+          <td class="right mono">{{ "%.2f"|format(b.consultation_charge) }}</td>
+          <td class="right mono">{{ "%.2f"|format(b.treatment_charge) }}</td>
+          <td class="right mono total" id="bill-total-{{ b.id }}">{{ "%.2f"|format(b.total) }}</td>
+          <td><span class="badge {{ 'success' if b.status == 'Paid' else 'warning' }}">{{ b.status }}</span></td>
+          <td>
+            <div class="row-actions">
+              {% if b.status == 'Unpaid' %}
+              <form method="post" action="{{ url_for('pay_bill', bill_id=b.id) }}">
+                <button class="btn btn-outline btn-sm" id="pay-bill-{{ b.id }}" type="submit">{{ icon("check", 14) }}Mark Paid</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="empty"><div class="empty-state">{{ icon("receipt", 28) }}<p>No bills yet.</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+  // Live preview of the bill total while typing (the server still calculates the real total)
+  (function () {
+    var consult = document.getElementById("bill-consultation");
+    var treat = document.getElementById("bill-treatment");
+    var out = document.getElementById("total-preview");
+    function update() {
+      var total = (parseFloat(consult.value) || 0) + (parseFloat(treat.value) || 0);
+      out.textContent = total.toFixed(2);
+    }
+    consult.addEventListener("input", update);
+    treat.addEventListener("input", update);
+  })();
+</script>
 {% endblock %}
