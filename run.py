@@ -15,6 +15,8 @@ How to run (two terminals):
 
 Options:
     python run.py TC03 TC11     run only these test cases
+    python run.py TC01-TC13     run a range of test cases
+    python run.py --type negative   run only one type: positive, negative, boundary, edge, security
     python run.py --step        pause before each test case (press Enter to go on)
     python run.py --fast        no slow typing and no pauses
     python run.py --list        list all test cases
@@ -32,7 +34,7 @@ from contextlib import contextmanager
 from datetime import date, timedelta
 
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import NoAlertPresentException, WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
@@ -41,6 +43,7 @@ BASE_URL = "http://127.0.0.1:5000"
 TYPE_DELAY = 0.06  # seconds between key presses, so the audience can watch the typing
 STEP_DELAY = 0.8   # seconds to pause after each step
 TOMORROW = (date.today() + timedelta(days=1)).isoformat()
+YESTERDAY = (date.today() - timedelta(days=1)).isoformat()
 FAILURE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo_failures")
 
 os.system("")  # switches on colours in the Windows terminal
@@ -247,7 +250,8 @@ def login(username="admin", password="admin123"):
     click("login", "the Login button")
 
 
-def add_patient(name, age="30", gender="Male", phone="9876543210", disease="Fever"):
+def submit_patient(name, age="30", gender="Male", phone="9876543210", disease="Fever"):
+    """Fills in the Add Patient form and submits it."""
     open_page("/patients")
     type_into("patient-name", name)
     type_into("patient-age", age)
@@ -255,17 +259,66 @@ def add_patient(name, age="30", gender="Male", phone="9876543210", disease="Feve
     type_into("patient-phone", phone)
     type_into("patient-disease", disease)
     click("add-patient-btn", "Add Patient")
+
+
+def add_patient(name, age="30", gender="Male", phone="9876543210", disease="Fever"):
+    submit_patient(name, age, gender, phone, disease)
     return max(row_ids("patients-table", "patient-row-"))  # ID of the new patient
 
 
-def add_doctor(name, specialization, phone="9876501234", fee="400"):
+def submit_doctor(name, specialization, phone="9876501234", fee="400"):
+    """Fills in the Add Doctor form and submits it."""
     open_page("/doctors")
     type_into("doctor-name", name)
     type_into("doctor-specialization", specialization)
     type_into("doctor-phone", phone)
     type_into("doctor-fee", fee)
     click("add-doctor-btn", "Add Doctor")
+
+
+def add_doctor(name, specialization, phone="9876501234", fee="400"):
+    submit_doctor(name, specialization, phone, fee)
     return max(row_ids("doctors-table", "doctor-row-"))  # ID of the new doctor
+
+
+def submit_record(patient_id, diagnosis, treatment, prescription, day=None):
+    """Fills in the Add Medical Record form and submits it."""
+    open_page("/records")
+    choose("record-patient", value=patient_id)
+    if day:
+        set_date("record-date", day)
+    if diagnosis:
+        type_into("record-diagnosis", diagnosis)
+    else:
+        step("Leave Diagnosis empty")
+    type_into("record-treatment", treatment)
+    type_into("record-prescription", prescription)
+    click("add-record-btn", "Save Record")
+
+
+def submit_bill(patient_id, consultation, treatment):
+    """Fills in the Generate Bill form and submits it."""
+    open_page("/billing")
+    choose("bill-patient", value=patient_id)
+    type_into("bill-consultation", consultation)
+    type_into("bill-treatment", treatment)
+    click("create-bill-btn", "Generate Bill")
+
+
+def no_history(patient_id):
+    """Opens the patient's medical history and checks that it is empty."""
+    choose("history-patient", value=patient_id)
+    click("history-btn", "View Patient History")
+    check("No medical records found" in read("records-table"), "No medical record was saved")
+
+
+def alert_is_open():
+    """True if a JavaScript pop-up (alert) is open - that would mean a script ran."""
+    try:
+        driver.switch_to.alert
+        return True
+    except NoAlertPresentException:
+        return False
 
 
 def book_appointment(patient_id, doctor_id, day, slot):
@@ -436,22 +489,301 @@ def tc13():
     check(total == "1700.00", f"Bill total is 500 + 1200 = 1700.00 (page shows {total})")
 
 
+# =====================================================================
+#  TC14 - TC37 : NEGATIVE, BOUNDARY / EDGE and SECURITY test cases
+#  (wrong input must show an error and must NOT be saved)
+# =====================================================================
+def tc14():
+    login("doctor", "admin123")
+    check("Invalid username or password" in message("error"),
+          'Red message "Invalid username or password." is shown')
+    check("/dashboard" not in current_url(), "The user stays on the login page")
+
+
+def tc15():
+    driver.delete_all_cookies()
+    open_page("/")
+    step("Leave username and password empty")
+    pause()
+    click("login", "the Login button")
+    check("Invalid username or password" in message("error"),
+          'Red message "Invalid username or password." is shown')
+    check("/dashboard" not in current_url(), "The user stays on the login page")
+
+
+def tc16():
+    step("Try a classic SQL injection attack in the login form")
+    login("admin' --", "' OR '1'='1")
+    check("Invalid username or password" in message("error"), "The attack is refused")
+    check("/dashboard" not in current_url(), "The user stays on the login page")
+
+
+def tc17():
+    driver.delete_all_cookies()  # make sure nobody is logged in
+    step("Type the address of the Patients page directly, without logging in")
+    open_page("/patients")
+    check(current_url().rstrip("/") == BASE_URL, "Selenium was sent back to the login page")
+    check("Please log in first" in message("error"), 'Red message "Please log in first." is shown')
+
+
+def tc18():
+    with setup("log in as admin"):
+        login()
+    submit_patient("Nisha Patel", "30", "Female", "12345", "Fever")
+    check("Phone number must be exactly 10 digits" in message("error"),
+          'Red message "Phone number must be exactly 10 digits." is shown')
+    check("Nisha Patel" not in read("patients-table"), "Nisha Patel was NOT saved")
+
+
+def tc19():
+    with setup("log in as admin"):
+        login()
+    submit_patient("Nisha Patel", "30", "Female", "98765432101", "Fever")
+    check("Phone number must be exactly 10 digits" in message("error"),
+          "11 digits (one too many) is rejected")
+    check("Nisha Patel" not in read("patients-table"), "Nisha Patel was NOT saved")
+
+
+def tc20():
+    with setup("log in as admin"):
+        login()
+    submit_patient("Ravi123", "30", "Male", "9876543210", "Fever")
+    check("Name can only contain letters" in message("error"),
+          'Red message "Name can only contain letters ..." is shown')
+    check("Ravi123" not in read("patients-table"), "Ravi123 was NOT saved")
+
+
+def tc21():
+    with setup("log in as admin"):
+        login()
+    submit_patient("Ramaiah Shetty", "121", "Male", "9876543210", "Weakness")
+    check("Age must be between 0 and 120" in message("error"),
+          "Age 121 (just above the limit) is rejected")
+    check("Ramaiah Shetty" not in read("patients-table"), "Ramaiah Shetty was NOT saved")
+
+
+def cell(row_id, column):
+    """Text of one cell in a table row (column 0 is the first column)."""
+    return driver.find_element(By.ID, row_id).find_elements(By.TAG_NAME, "td")[column].text
+
+
+def tc22():
+    with setup("log in as admin"):
+        login()
+    baby = add_patient("Baby Sharma", "0", "Female", "9000000001", "Jaundice")
+    check("Patient added successfully" in message("success"), "Age 0 (the lowest limit) is accepted")
+    elder = add_patient("Grandpa Rao", "120", "Male", "9000000002", "Weakness")
+    check("Patient added successfully" in message("success"), "Age 120 (the highest limit) is accepted")
+    check(cell(f"patient-row-{baby}", 2) == "0" and cell(f"patient-row-{elder}", 2) == "120",
+          "The table shows ages 0 and 120")
+
+
+def tc23():
+    with setup("log in as admin"):
+        login()
+    open_page("/patients")
+    type_into("search-box", "99999")
+    click("search-btn", "Search")
+    check("No patients found" in read("patients-table"), 'Patient ID 99999 does not exist: "No patients found."')
+
+
+def tc24():
+    with setup("log in, add a patient with phone 9876508888"):
+        login()
+        patient_id = add_patient("Lakshmi Iyer", "41", "Female", "9876508888", "Asthma")
+    open_page("/patients")
+    click(f"edit-patient-{patient_id}", "Edit")
+    type_into("patient-phone", "123")
+    click("update-patient-btn", "Update Patient")
+    check("Phone number must be exactly 10 digits" in message("error"),
+          'Red message "Phone number must be exactly 10 digits." is shown')
+    open_page("/patients")
+    check("9876508888" in read(f"patient-row-{patient_id}"), "The old phone number is still saved")
+
+
+def tc25():
+    with setup("log in as admin"):
+        login()
+    attack = "<script>alert('hacked')</script>"
+    patient_id = add_patient("Hacker Test", "30", "Male", "9876509999", attack)
+    check(not alert_is_open(), "The script did NOT run (no pop-up)")
+    check(attack in read(f"patient-row-{patient_id}"), "It is shown as plain text in the table")
+
+
+def tc26():
+    with setup("log in as admin"):
+        login()
+    submit_doctor("Dr. Free Clinic", "General Physician", "9876510000", "0")
+    check("Fee must be greater than 0" in message("error"), 'Red message "Fee must be greater than 0." is shown')
+    check("Dr. Free Clinic" not in read("doctors-table"), "Dr. Free Clinic was NOT saved")
+
+
+def tc27():
+    with setup("log in as admin"):
+        login()
+    open_page("/doctors")
+    type_into("doctor-search-box", "Veterinarian")
+    click("doctor-search-btn", "Search")
+    check("No doctors found" in read("doctors-table"), 'No match: "No doctors found."')
+
+
+def tc28():
+    with setup("log in, add a patient and a doctor"):
+        login()
+        patient_id = add_patient("Farhan Ali", "33", "Male", "9876511111", "Fever")
+        doctor_id = add_doctor("Dr. Kavya Nair", "Dermatologist", "9876511112", "350")
+    book_appointment(patient_id, doctor_id, YESTERDAY, "10:00")
+    check("Appointment date cannot be in the past" in message("error"),
+          'Red message "Appointment date cannot be in the past." is shown')
+    check("Dr. Kavya Nair" not in read("appointments-table"), "No appointment was booked")
+
+
+def tc29():
+    with setup("log in, add a doctor"):
+        login()
+        doctor_id = add_doctor("Dr. Mohan Das", "ENT Specialist", "9876511113", "300")
+    open_page("/appointments")
+    step('Leave the patient as "Select patient"')
+    choose("appt-doctor", value=doctor_id)
+    set_date("appt-date", TOMORROW)
+    click("book-btn", "Book Appointment")
+    check("Please select a valid patient" in message("error"),
+          'Red message "Please select a valid patient." is shown')
+    check("Dr. Mohan Das" not in read("appointments-table"), "No appointment was booked")
+
+
+def tc30():
+    with setup("log in, add a patient and a doctor, mark the doctor Unavailable"):
+        login()
+        patient_id = add_patient("Sneha Reddy", "27", "Female", "9876511114", "Allergy")
+        doctor_id = add_doctor("Dr. Ravi Shankar", "Cardiologist", "9876511115", "600")
+        click(f"toggle-doctor-{doctor_id}", "Mark Unavailable")
+    book_appointment(patient_id, doctor_id, TOMORROW, "14:00")
+    check("This doctor is not available" in message("error"),
+          'Red message "This doctor is not available right now." is shown')
+    check("Dr. Ravi Shankar" not in read("appointments-table"), "No appointment was booked")
+
+
+def tc31():
+    with setup("log in, add a patient and two doctors, book the first doctor at 15:00"):
+        login()
+        patient_id = add_patient("Manoj Kumar", "48", "Male", "9876511116", "Back pain")
+        first = add_doctor("Dr. Asha Menon", "Orthopedic", "9876511117", "450")
+        second = add_doctor("Dr. Imran Khan", "Neurologist", "9876511118", "700")
+        book_appointment(patient_id, first, TOMORROW, "15:00")
+    step("Now book the SAME patient with ANOTHER doctor at the same date and time")
+    pause()
+    book_appointment(patient_id, second, TOMORROW, "15:00")
+    check("This patient already has an appointment" in message("error"),
+          "A patient cannot be in two places at once - booking refused")
+
+
+def tc32():
+    with setup("log in, add a patient and a doctor, book 16:00"):
+        login()
+        patient_id = add_patient("Rekha Singh", "55", "Female", "9876511119", "Diabetes")
+        doctor_id = add_doctor("Dr. Vikram Joshi", "General Physician", "9876511120", "300")
+        book_appointment(patient_id, doctor_id, TOMORROW, "16:00")
+        first = max(row_ids("appointments-table", "appointment-row-"))
+    click(f"cancel-appointment-{first}", "Cancel")
+    step("Book the SAME doctor, date and time again")
+    book_appointment(patient_id, doctor_id, TOMORROW, "16:00")
+    check("Appointment booked successfully" in message("success"),
+          "The cancelled slot can be booked again")
+    check("Cancelled" in read(f"appointment-row-{first}"), "The old appointment is shown as Cancelled")
+
+
+def tc33():
+    with setup("log in, add a patient"):
+        login()
+        patient_id = add_patient("Kavitha Rao", "38", "Female", "9876511121", "Headache")
+    submit_record(patient_id, "", "Rest", "Paracetamol")
+    check("Diagnosis is required" in message("error"), 'Red message "Diagnosis is required." is shown')
+    no_history(patient_id)
+
+
+def tc34():
+    with setup("log in, add a patient"):
+        login()
+        patient_id = add_patient("Suresh Gowda", "62", "Male", "9876511122", "Fever")
+    submit_record(patient_id, "Viral fever", "Rest", "Paracetamol", day=TOMORROW)
+    check("Visit date cannot be in the future" in message("error"),
+          'Red message "Visit date cannot be in the future." is shown')
+    no_history(patient_id)
+
+
+def tc35():
+    with setup("log in, add a patient"):
+        login()
+        patient_id = add_patient("Anita Das", "29", "Female", "9876511123", "Checkup")
+    submit_bill(patient_id, "0", "0")
+    check("Total amount must be greater than 0" in message("error"),
+          'Red message "Total amount must be greater than 0." is shown')
+    check("Anita Das" not in read("bills-table"), "No bill was saved for Anita Das")
+
+
+def tc36():
+    with setup("log in, add a patient"):
+        login()
+        patient_id = add_patient("Prakash Jain", "50", "Male", "9876511124", "Fracture")
+    submit_bill(patient_id, "-100", "500")
+    check("Consultation charge cannot be negative" in message("error"),
+          'Red message "Consultation charge cannot be negative." is shown')
+    check("Prakash Jain" not in read("bills-table"), "No bill was saved for Prakash Jain")
+
+
+def tc37():
+    with setup("log in, add a patient"):
+        login()
+        patient_id = add_patient("Deepa Nair", "35", "Female", "9876511125", "Migraine")
+    submit_bill(patient_id, "499.50", "0.25")
+    check("Bill generated successfully" in message("success"), 'Green message "Bill generated successfully." is shown')
+    bill_id = max(row_ids("bills-table", "bill-row-"))
+    total = read(f"bill-total-{bill_id}")
+    check(total == "499.75", f"Bill total is 499.50 + 0.25 = 499.75 (page shows {total})")
+
+
 TEST_CASES = [
-    # id,    test case,                 input,                        expected result,              function
-    ("TC01", "Login with valid details", "Correct username/password", "Login successful", tc01),
-    ("TC02", "Login with invalid details", "Wrong password", "Error message displayed", tc02),
-    ("TC03", "Add patient", "Valid patient details", "Patient added", tc03),
-    ("TC04", "Empty patient form", "Empty fields", "Validation message", tc04),
-    ("TC05", "Book appointment", "Valid doctor/date", "Appointment booked", tc05),
-    ("TC06", "Search patient", "Patient ID", "Patient details displayed", tc06),
-    ("TC07", "Update patient", "Modified details", "Details updated", tc07),
-    ("TC08", "Delete patient", "Existing patient", "Patient removed", tc08),
-    ("TC09", "Logout", "Click Logout", "User returned to login page", tc09),
-    ("TC10", "Doctor availability", "Mark doctor unavailable", 'Shows "Not Available"', tc10),
-    ("TC11", "Double booking", "Same doctor, date and time", 'Error "already booked"', tc11),
-    ("TC12", "Medical record", "Diagnosis, treatment, prescription", "Record saved", tc12),
-    ("TC13", "Billing total", "500 + 1200", "Total = 1700.00", tc13),
+    # id,   type,       test case,                    input,                          expected result,                 function
+    ("TC01", "Positive", "Login with valid details", "Correct username/password", "Login successful", tc01),
+    ("TC02", "Negative", "Login with invalid details", "Wrong password", "Error message displayed", tc02),
+    ("TC03", "Positive", "Add patient", "Valid patient details", "Patient added", tc03),
+    ("TC04", "Negative", "Empty patient form", "Empty fields", "Validation message", tc04),
+    ("TC05", "Positive", "Book appointment", "Valid doctor/date", "Appointment booked", tc05),
+    ("TC06", "Positive", "Search patient", "Patient ID", "Patient details displayed", tc06),
+    ("TC07", "Positive", "Update patient", "Modified details", "Details updated", tc07),
+    ("TC08", "Positive", "Delete patient", "Existing patient", "Patient removed", tc08),
+    ("TC09", "Positive", "Logout", "Click Logout", "User returned to login page", tc09),
+    ("TC10", "Positive", "Doctor availability", "Mark doctor unavailable", 'Shows "Not Available"', tc10),
+    ("TC11", "Negative", "Double booking", "Same doctor, date and time", 'Error "already booked"', tc11),
+    ("TC12", "Positive", "Medical record", "Diagnosis, treatment, prescription", "Record saved", tc12),
+    ("TC13", "Positive", "Billing total", "500 + 1200", "Total = 1700.00", tc13),
+    ("TC14", "Negative", "Login with wrong username", "Username doctor", "Error message displayed", tc14),
+    ("TC15", "Negative", "Login with empty fields", "Empty username/password", "Error message displayed", tc15),
+    ("TC16", "Security", "SQL injection in login", "admin' --  /  ' OR '1'='1", "Login refused", tc16),
+    ("TC17", "Security", "Page without login", "Open /patients directly", "Sent to login page", tc17),
+    ("TC18", "Negative", "Phone too short", "Phone 12345", "Error, not saved", tc18),
+    ("TC19", "Boundary", "Phone one digit too long", "Phone with 11 digits", "Error, not saved", tc19),
+    ("TC20", "Negative", "Name with numbers", "Name Ravi123", "Error, not saved", tc20),
+    ("TC21", "Boundary", "Age just above limit", "Age 121", "Error, not saved", tc21),
+    ("TC22", "Boundary", "Age at the limits", "Age 0 and age 120", "Both accepted", tc22),
+    ("TC23", "Negative", "Search unknown patient", "Patient ID 99999", '"No patients found"', tc23),
+    ("TC24", "Negative", "Invalid patient update", "Phone 123", "Error, old data kept", tc24),
+    ("TC25", "Security", "Script injection (XSS)", "<script> in disease", "Shown as text, not run", tc25),
+    ("TC26", "Boundary", "Doctor fee 0", "Fee 0", "Error, not saved", tc26),
+    ("TC27", "Negative", "Search unknown doctor", "Veterinarian", '"No doctors found"', tc27),
+    ("TC28", "Negative", "Appointment in the past", "Yesterday's date", "Error, not booked", tc28),
+    ("TC29", "Negative", "Appointment without patient", "No patient selected", "Error, not booked", tc29),
+    ("TC30", "Negative", "Unavailable doctor", "Doctor marked unavailable", "Error, not booked", tc30),
+    ("TC31", "Negative", "Patient double booking", "Same patient, 2 doctors, same time", "Error, not booked", tc31),
+    ("TC32", "Edge", "Re-book cancelled slot", "Cancel, then book again", "Booked again", tc32),
+    ("TC33", "Negative", "Record without diagnosis", "Empty diagnosis", "Error, not saved", tc33),
+    ("TC34", "Negative", "Record with future date", "Tomorrow's date", "Error, not saved", tc34),
+    ("TC35", "Boundary", "Bill total 0", "0 + 0", "Error, not saved", tc35),
+    ("TC36", "Negative", "Negative charge", "-100 + 500", "Error, not saved", tc36),
+    ("TC37", "Edge", "Decimal amounts", "499.50 + 0.25", "Total = 499.75", tc37),
 ]
+TEST_TYPES = ("positive", "negative", "boundary", "edge", "security")
 
 
 # =====================================================================
@@ -524,11 +856,11 @@ def show_start_page(first_test):
 </div></body></html>""")
 
 
-def run_test(test_id, name, given, expected, function):
+def run_test(test_id, kind, name, given, expected, function):
     global current_test
     current_test = f"{test_id} {name}"
     line = "=" * 64
-    print(f"\n{BOLD}{line}\n {test_id}  {name}{RESET}")
+    print(f"\n{BOLD}{line}\n {test_id}  {name}{RESET}  {GREY}[{kind} test]{RESET}")
     print(f"       Input: {given}   |   Expected: {expected}\n{BOLD}{line}{RESET}")
     started = time.time()
     try:
@@ -555,13 +887,14 @@ def run_test(test_id, name, given, expected, function):
 
 
 def show_results_page(results, total_seconds):
-    passed = sum(1 for r in results if r[2] == "PASS")
+    passed = sum(1 for r in results if r[3] == "PASS")
     failed = len(results) - passed
     rows = "".join(
-        f"<tr><td class='id'>{tid}</td><td>{name}"
-        f"{f'<div class=why>{html.escape(reason)}</div>' if reason else ''}</td><td>{given}</td><td>{expected}</td>"
+        f"<tr><td class='id'>{tid}</td><td class='t'>{kind}</td><td>{html.escape(name)}"
+        f"{f'<div class=why>{html.escape(reason)}</div>' if reason else ''}</td>"
+        f"<td>{html.escape(given)}</td><td>{html.escape(expected)}</td>"
         f"<td><span class='pill {status.lower()}'>{status}</span></td><td class='t'>{secs:.1f} s</td></tr>"
-        for tid, name, status, secs, given, expected, reason in results)
+        for tid, kind, name, status, secs, given, expected, reason in results)
     page = f"""<!doctype html><html><head><meta charset="utf-8"><title>Selenium Test Results</title>
 <style>
  body{{margin:0;font:15px/1.5 "Segoe UI",system-ui,sans-serif;background:#f4f6fa;color:#0f172a}}
@@ -587,7 +920,7 @@ def show_results_page(results, total_seconds):
   <div class="card bad"><b>{failed}</b><span>Failed</span></div>
   <div class="card"><b>{total_seconds:.0f} s</b><span>Total time</span></div>
  </div>
- <table><tr><th>ID</th><th>Test case</th><th>Input</th><th>Expected result</th><th>Result</th><th>Time</th></tr>{rows}</table>
+ <table><tr><th>ID</th><th>Type</th><th>Test case</th><th>Input</th><th>Expected result</th><th>Result</th><th>Time</th></tr>{rows}</table>
 </div></body></html>"""
     write_page(page)
 
@@ -610,7 +943,10 @@ def app_is_running():
 def main():
     global driver, speed, BASE_URL
     parser = argparse.ArgumentParser(description="Live Selenium demo for the Hospital Management System")
-    parser.add_argument("tests", nargs="*", help="test case IDs to run, e.g. TC01 TC05 (default: all)")
+    parser.add_argument("tests", nargs="*",
+                        help="test case IDs to run, e.g. TC01 TC05 or a range TC01-TC13 (default: all)")
+    parser.add_argument("--type", choices=TEST_TYPES,
+                        help="run only one type of test case, e.g. --type negative")
     parser.add_argument("--step", action="store_true", help="pause before each test case")
     parser.add_argument("--fast", action="store_true", help="no slow typing and no pauses")
     parser.add_argument("--list", action="store_true", help="list the test cases and exit")
@@ -619,14 +955,23 @@ def main():
     BASE_URL = args.url.rstrip("/")
 
     if args.list:
-        for tid, name, given, expected, _ in TEST_CASES:
-            print(f"{tid}  {name:<28} {given:<36} -> {expected}")
+        for tid, kind, name, given, expected, _ in TEST_CASES:
+            print(f"{tid}  {kind:<9} {name:<28} {given:<36} -> {expected}")
         return 0
 
-    wanted = {t.upper() for t in args.tests}
-    selected = [tc for tc in TEST_CASES if not wanted or tc[0] in wanted]
+    wanted = set()
+    for item in args.tests:
+        first, _, last = item.upper().partition("-")  # "TC01-TC13" is a range
+        ids = [tc[0] for tc in TEST_CASES]
+        if last and first in ids and last in ids:
+            wanted.update(ids[ids.index(first):ids.index(last) + 1])
+        else:
+            wanted.add(item.upper())
+    selected = [tc for tc in TEST_CASES
+                if (not wanted or tc[0] in wanted) and (not args.type or tc[1].lower() == args.type)]
     if not selected:
-        print(f"{RED}No test case matches {', '.join(args.tests)}. Use --list to see them.{RESET}")
+        asked = " ".join(args.tests + ([f"--type {args.type}"] if args.type else []))
+        print(f"{RED}No test case matches {asked}. Use --list to see them.{RESET}")
         return 1
     if not app_is_running():
         print(f"{RED}The Hospital Management System is not running at {BASE_URL}.{RESET}")
@@ -639,23 +984,23 @@ def main():
     driver = open_browser()
     print(f"{YELLOW}A new Chrome window opened. Selenium controls it - do not close it.{RESET}")
     if args.step:
-        show_start_page(f"{selected[0][0]} {selected[0][1]}")
+        show_start_page(f"{selected[0][0]} {selected[0][2]}")
     results = []
     started = time.time()
     try:
-        for tid, name, given, expected, function in selected:
+        for tid, kind, name, given, expected, function in selected:
             if args.step:
                 wait_for_enter(f"Press Enter to run {tid} - {name} ...")
             make_sure_browser_is_open()
-            status, seconds, reason = run_test(tid, name, given, expected, function)
-            results.append((tid, name, status, seconds, given, expected, reason))
+            status, seconds, reason = run_test(tid, kind, name, given, expected, function)
+            results.append((tid, kind, name, status, seconds, given, expected, reason))
         total = time.time() - started
 
-        passed = sum(1 for r in results if r[2] == "PASS")
+        passed = sum(1 for r in results if r[3] == "PASS")
         failed = len(results) - passed
         colour = GREEN if not failed else RED
         print(f"\n{BOLD}{'=' * 64}\n SUMMARY{RESET}")
-        for tid, name, status, seconds, *_ in results:
+        for tid, kind, name, status, seconds, *_ in results:
             mark = f"{GREEN}PASS{RESET}" if status == "PASS" else f"{RED}FAIL{RESET}"
             print(f"   {tid}  {name:<30} {mark}  {GREY}{seconds:5.1f} s{RESET}")
         print(f"{colour}{BOLD}\n   {passed} passed, {failed} failed  in {total:.0f} s{RESET}")

@@ -44,7 +44,7 @@ Three sample doctors are added automatically the first time you run it. Data is 
 ## 3. How to run the tests
 
 ```bash
-# All 98 tests (13 Selenium + 85 PyTest). Chrome opens and runs the UI tests in front of you.
+# All 122 tests (37 Selenium + 85 PyTest). Chrome opens and runs the UI tests in front of you.
 python -m pytest
 
 # Only the Selenium tests
@@ -69,8 +69,8 @@ Selenium 4 downloads the correct ChromeDriver automatically.
 |---|---|
 | `python app.py` | Starts our Hospital Management System |
 | `python login.py` | First Selenium test: logs in by itself (10 lines of code) |
-| `python run.py --step` | Selenium tests all 13 test cases in front of the class, one by one |
-| `python report.py` | Runs all 98 tests and opens the HTML test report |
+| `python run.py --step` | Selenium tests all 37 test cases in front of the class, one by one |
+| `python report.py` | Runs all 122 tests and opens the HTML test report |
 
 `run.py` lets the class **watch Selenium test the software** on the real running app:
 
@@ -79,39 +79,77 @@ Selenium 4 downloads the correct ChromeDriver automatically.
 - the terminal prints every step **and the real Selenium command behind it**, e.g.
   `driver.find_element(By.ID, "patient-name").send_keys("Ravi Teja")`
 - every check prints `CHECK PASSED` (or `CHECK FAILED` with a screenshot in `demo_failures/`)
-- at the end Chrome shows a **results page** (13 passed / 0 failed)
+- at the end Chrome shows a **results page** (37 passed / 0 failed)
 
 | Typing into a field | A check passing | Results page |
 |---|---|---|
 | ![](docs/screenshots/demo_01_selenium_typing.png) | ![](docs/screenshots/demo_02_check_passed.png) | ![](docs/screenshots/demo_03_results_page.png) |
 
 ```bash
-python run.py              # all 13 test cases, presentation speed (about 2.5 minutes)
+python run.py              # all 37 test cases, presentation speed (about 7 minutes)
 python run.py --step       # wait for Enter before each test case (best for explaining)
 python run.py TC03 TC11    # only some test cases
+python run.py --type negative   # only one type: positive, negative, boundary, edge, security
 python run.py --fast       # full speed
 python run.py --list       # list the test cases
 ```
 
 ## 5. Selenium test cases
 
-TC01–TC09 are exactly the test cases in our project document. File: `tests/ui/test_selenium_hms.py`
+37 Selenium test cases. TC01–TC09 are exactly the test cases in our project document.
+They are in `tests/ui/test_selenium_hms.py` (fast, for the report) and in `run.py` (slow, for the live demo).
 
-| ID | Test Case | Input | Expected Result | Result |
-|---|---|---|---|---|
-| TC01 | Login with valid details | Correct username/password | Login successful | PASS |
-| TC02 | Login with invalid details | Wrong password | Error message displayed | PASS |
-| TC03 | Add patient | Valid patient details | Patient added | PASS |
-| TC04 | Empty patient form | Empty fields | Validation message | PASS |
-| TC05 | Book appointment | Valid doctor/date | Appointment booked | PASS |
-| TC06 | Search patient | Patient ID | Patient details displayed | PASS |
-| TC07 | Update patient | Modified details | Details updated | PASS |
-| TC08 | Delete patient | Existing patient | Patient removed | PASS |
-| TC09 | Logout | Click Logout | User returned to login page | PASS |
-| TC10 | Doctor availability | Mark doctor unavailable | Shows "Not Available" | PASS |
-| TC11 | Double booking | Same doctor, date and time | Error "already booked" | PASS |
-| TC12 | Medical record | Diagnosis, treatment, prescription | Record saved | PASS |
-| TC13 | Billing total | 500 + 1200 | Total = 1700.00 | PASS |
+| Type | What it means | Count |
+|---|---|---|
+| **Positive** | Valid input → the action must succeed | 10 |
+| **Negative** | Wrong or missing input → an error must be shown and **nothing saved** | 17 |
+| **Boundary / Edge** | Values exactly at or just past a limit (age 0 / 120 / 121, phone 10 / 11 digits, total 0), or unusual but valid cases | 7 |
+| **Security** | SQL injection, script injection (XSS), opening pages without logging in | 3 |
+
+| ID | Type | Test Case | Input | Expected Result | Result |
+|---|---|---|---|---|---|
+| TC01 | Positive | Login with valid details | Correct username/password | Login successful | PASS |
+| TC02 | Negative | Login with invalid details | Wrong password | Error message displayed | PASS |
+| TC03 | Positive | Add patient | Valid patient details | Patient added | PASS |
+| TC04 | Negative | Empty patient form | Empty fields | Validation message | PASS |
+| TC05 | Positive | Book appointment | Valid doctor/date | Appointment booked | PASS |
+| TC06 | Positive | Search patient | Patient ID | Patient details displayed | PASS |
+| TC07 | Positive | Update patient | Modified details | Details updated | PASS |
+| TC08 | Positive | Delete patient | Existing patient | Patient removed | PASS |
+| TC09 | Positive | Logout | Click Logout | User returned to login page | PASS |
+| TC10 | Positive | Doctor availability | Mark doctor unavailable | Shows "Not Available" | PASS |
+| TC11 | Negative | Double booking | Same doctor, date and time | Error "already booked" | PASS |
+| TC12 | Positive | Medical record | Diagnosis, treatment, prescription | Record saved | PASS |
+| TC13 | Positive | Billing total | 500 + 1200 | Total = 1700.00 | PASS |
+| TC14 | Negative | Login with wrong username | Username `doctor` | Error message displayed | PASS |
+| TC15 | Negative | Login with empty fields | Empty username and password | Error message displayed | PASS |
+| TC16 | Security | SQL injection in login | `admin' --` / `' OR '1'='1` | Login refused | PASS |
+| TC17 | Security | Page without login | Open `/patients` directly | Sent back to login page | PASS |
+| TC18 | Negative | Phone too short | Phone `12345` | Error, patient not saved | PASS |
+| TC19 | Boundary | Phone one digit too long | Phone with 11 digits | Error, patient not saved | PASS |
+| TC20 | Negative | Name with numbers | Name `Ravi123` | Error, patient not saved | PASS |
+| TC21 | Boundary | Age just above the limit | Age 121 | Error, patient not saved | PASS |
+| TC22 | Boundary | Age at the limits | Age 0 and age 120 | Both accepted | PASS |
+| TC23 | Negative | Search unknown patient | Patient ID 99999 | "No patients found" | PASS |
+| TC24 | Negative | Invalid patient update | Phone `123` | Error, old details kept | PASS |
+| TC25 | Security | Script injection (XSS) | `<script>alert('hacked')</script>` as disease | Shown as text, script does not run | PASS |
+| TC26 | Boundary | Doctor fee 0 | Fee 0 | Error, doctor not saved | PASS |
+| TC27 | Negative | Search unknown doctor | `Veterinarian` | "No doctors found" | PASS |
+| TC28 | Negative | Appointment in the past | Yesterday's date | Error, not booked | PASS |
+| TC29 | Negative | Appointment without patient | No patient selected | Error, not booked | PASS |
+| TC30 | Negative | Unavailable doctor | Doctor marked unavailable | Error, not booked | PASS |
+| TC31 | Negative | Patient double booking | Same patient, 2 doctors, same time | Error, not booked | PASS |
+| TC32 | Edge | Re-book a cancelled slot | Cancel, then book the same slot | Booked again | PASS |
+| TC33 | Negative | Record without diagnosis | Empty diagnosis | Error, not saved | PASS |
+| TC34 | Negative | Record with future date | Tomorrow's date | Error, not saved | PASS |
+| TC35 | Boundary | Bill total 0 | 0 + 0 | Error, not saved | PASS |
+| TC36 | Negative | Negative charge | -100 + 500 | Error, not saved | PASS |
+| TC37 | Edge | Decimal amounts | 499.50 + 0.25 | Total = 499.75 | PASS |
+
+**Do these tests really catch bugs?** We checked with *mutation testing*: we put 6 bugs into a copy of the app
+on purpose (allow age 121, allow 11-digit phones, remove the patient double-booking rule, make the login
+vulnerable to SQL injection, allow script injection, allow a bill of 0). Every one was caught by its test
+(TC21, TC19, TC31, TC16, TC25, TC35).
 
 Every Selenium test follows the workflow from our document:
 **Launch browser → Open HMS → Locate elements → Perform actions → Submit → Verify result → Record result**
@@ -155,7 +193,7 @@ templates/              HTML pages (base.html = layout and sidebar, _icons.html 
 static/style.css        Styling
 login.py                Simple Selenium login test (same as in our document)
 run.py                  Live Selenium demo: highlights each step, prints the Selenium commands and PASS / FAIL
-report.py               Runs all 98 tests and opens the HTML test report
+report.py               Runs all 122 tests and opens the HTML test report
 DEMO_GUIDE.md           Classroom demo script
 tests/
   conftest.py           PyTest setup: fresh test database for every test
@@ -163,7 +201,7 @@ tests/
   test_database.py      Integration tests
   test_routes.py        Functional tests
   ui/conftest.py        Selenium setup: starts the app and opens Chrome
-  ui/test_selenium_hms.py  Selenium test cases TC01–TC13
+  ui/test_selenium_hms.py  Selenium test cases TC01–TC37
 docs/                   Test report and screenshots
 presentation/           PowerPoint presentation
 ```

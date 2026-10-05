@@ -1,6 +1,6 @@
 # Classroom Demo Guide
 
-What to **do** and what to **say**, step by step. Total time: about 12 minutes.
+What to **do** and what to **say**, step by step. Total time: about 14 minutes.
 
 ## The 4 commands you need
 
@@ -8,11 +8,13 @@ What to **do** and what to **say**, step by step. Total time: about 12 minutes.
 |---|---|
 | `python app.py` | Starts our Hospital Management System (the software we test) |
 | `python login.py` | Our first Selenium test: logs in by itself (10 lines of code) |
-| `python run.py --step` | Selenium tests all 13 test cases, one by one, in front of the class |
-| `python report.py` | Runs all 98 tests automatically and opens the test report |
+| `python run.py --step TC01-TC13` | Selenium tests the 13 main test cases, one by one, in front of the class |
+| `python report.py` | Runs all 122 tests automatically and opens the test report |
 
 Extra options for `run.py`:
-`python run.py TC13` (only one test) · `python run.py --fast` (no slow typing) · `python run.py --list` (list the tests)
+`python run.py TC13` (only one test) · `python run.py TC14-TC20` (a range) ·
+`python run.py --type negative` (only one type: positive, negative, boundary, edge, security) ·
+`python run.py --fast` (no slow typing) · `python run.py --list` (list all 37 tests with their type)
 
 ---
 
@@ -20,7 +22,7 @@ Extra options for `run.py`:
 
 1. Install once: `pip install -r requirements.txt`
 2. **Do one practice run with internet on** (the first time, Selenium downloads ChromeDriver):
-   `python app.py` in one terminal, `python run.py --fast` in another. All 13 must say PASS.
+   `python app.py` in one terminal, `python run.py --fast` in another. All 37 must say PASS (about 1.5 minutes).
 3. Stop the app (**Ctrl + C**) and **delete `hospital.db`**, so the app starts clean in class
    (it starts again with only 3 sample doctors).
 4. Open the project in VS Code. Open `login.py` and `run.py` in tabs.
@@ -146,7 +148,7 @@ Then Terminal 2: `python login.py`
 
 ### Step 6: Selenium tests every module: `run.py` (4 minutes)
 
-**Do:** Terminal 2: `python run.py --step`. It waits for **Enter** before each test case.
+**Do:** Terminal 2: `python run.py --step TC01-TC13`. It waits for **Enter** before each test case.
 
 > **Two Chrome windows:** your own Chrome (from Step 2) stays open, and Selenium opens a **second,
 > separate** Chrome window that says **"Selenium is ready"** and *"Chrome is being controlled by automated
@@ -188,6 +190,29 @@ At the end Chrome shows a **results page**: 13 passed, 0 failed. Press **Enter**
 > request Selenium made is there. And if we open the Patients page now, the patients Selenium
 > added are saved in our database."
 
+### Step 6b: Negative, boundary and security tests (2 minutes)
+
+**Say first:**
+> "Testing only valid input is not enough. Real users make mistakes and attackers try to break
+> in. So we also have 17 **negative**, 7 **boundary / edge** and 3 **security** test cases,
+> 37 in total. Here are the most interesting ones."
+
+**Do:** Terminal 2: `python run.py --step TC16 TC21 TC22 TC25` (slide 7 shows all 24 of these tests)
+
+| Test | Say |
+|---|---|
+| TC16 SQL injection | "A **security test**: a classic attack, `admin' --` as the username. On a badly written website this logs in without a password. Our app refuses it." |
+| TC21 Age 121 | "**Boundary value analysis**: the limit is 120, so we test just above it. 121 must be rejected and not saved." |
+| TC22 Age 0 and 120 | "And exactly at the limits: 0 and 120 must be accepted. Bugs often hide at the edges, like writing `<` instead of `<=`." |
+| TC25 Script injection | "We type a `<script>` into the disease field. If the app were unsafe, a pop-up would appear. Selenium checks there is no pop-up and the text is shown as plain text." |
+
+**Say at the end:**
+> "For every negative test we check two things: the red error message is shown, **and** nothing
+> was saved. An error message alone is not enough: the data must not reach the database."
+
+Extra time? `python run.py TC31`: one patient cannot see two doctors at the same time. This was a real bug our testing found.
+To show all negative tests: `python run.py --type negative` (17 tests, about 3 to 4 minutes).
+
 ### Step 7: Show a test that FAILS (1 minute)
 
 **Do:**
@@ -205,12 +230,12 @@ At the end Chrome shows a **results page**: 13 passed, 0 failed. Press **Enter**
 
 ### Step 8: Run everything automatically: `report.py` (2 minutes)
 
-**Do:** Terminal 2: `python report.py`. Chrome opens and closes quickly for the 13 Selenium tests.
-After about 40 seconds, the **test report** opens in the browser: 98 passed.
+**Do:** Terminal 2: `python report.py`. Chrome opens and runs the 37 Selenium tests quickly.
+After about 1.5 minutes, the **test report** opens in the browser: 122 passed.
 
 **Say:**
-> "In a real project nobody watches the tests slowly. One command runs all 98 tests in about
-> 40 seconds and produces this report. We test at four levels:"
+> "In a real project nobody watches the tests slowly. One command runs all 122 tests in about
+> 1.5 minutes and produces this report. We test at four levels:"
 
 | Level | File | What it checks |
 |---|---|---|
@@ -246,7 +271,7 @@ How Selenium finds an element: `By.ID`, `By.NAME`, `By.CSS_SELECTOR`, `By.XPATH`
 The line that checks the expected result, e.g. `assert total == "1700.00"`. True = PASS, false = FAIL.
 
 **What is the difference between `run.py` and the PyTest Selenium tests?**
-Same 13 test cases. `run.py` is slow and shows every step, for a demo. `tests/ui/test_selenium_hms.py` is the real automated suite: fast, run by PyTest, uses its own empty database, makes the report.
+Same 37 test cases. `run.py` is slow and shows every step, for a demo. `tests/ui/test_selenium_hms.py` is the real automated suite: fast, run by PyTest, uses its own empty database, makes the report.
 
 **Why do you wait after clicking?**
 After a click, the next page needs time to load. If Selenium checks too early, the test fails randomly (a **flaky test**). We use `WebDriverWait` to wait until the new page has loaded. This was defect #9 we found.
@@ -261,7 +286,19 @@ Manual: a person clicks; slow, can make mistakes. Automated: code clicks; fast, 
 Selenium tests are **black-box**: they only use the screen, like a user, without looking at the code. Our unit tests are closer to white-box.
 
 **Positive and negative tests?**
-Positive: valid input, expect success (TC01, TC03). Negative: invalid input, expect an error (TC02, TC04, TC11).
+Positive: valid input, expect success (TC01, TC03). Negative: invalid input, expect an error **and nothing saved** (TC02, TC04, TC11, TC14–TC36). We have 10 positive, 17 negative, 7 boundary / edge and 3 security test cases.
+
+**What is boundary value analysis?**
+Bugs often hide at the limits. Age must be 0–120, so we test 0 and 120 (must pass) and 121 (must fail): TC21, TC22. Phone must be 10 digits, so we test 11 digits: TC19. A bill total of exactly 0 must fail: TC35.
+
+**What is an edge case?**
+An unusual but valid situation: booking a slot again after it was cancelled (TC32), or amounts with decimals like 499.50 + 0.25 (TC37).
+
+**What security tests did you do?**
+SQL injection in the login (TC16), script injection / XSS in a form (TC25), and opening pages without logging in (TC17, TC09).
+
+**How do you know your tests really catch bugs?**
+**Mutation testing**: we put 6 bugs into a copy of the app on purpose (for example, allow age 121 or make the login open to SQL injection). Every bug made its test fail. A test that never fails is useless.
 
 **Why Python and not Java like in the document?**
 The commands are the same: Java `findElement`/`sendKeys`, Python `find_element`/`send_keys`. Python is shorter to read.
