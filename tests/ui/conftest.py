@@ -21,7 +21,7 @@ from werkzeug.serving import make_server
 
 from app import create_app
 
-SCREENSHOT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "docs", "screenshots")
+SCREENSHOT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "docs", "screenshots", "tests")
 
 
 @pytest.fixture

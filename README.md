@@ -11,7 +11,9 @@ A simple web-based Hospital Management System (HMS), tested automatically with *
 
 - Presentation (10 slides, with speaker notes): [`presentation/Hospital_Management_System_Selenium_Testing.pptx`](presentation/Hospital_Management_System_Selenium_Testing.pptx)
 - Test report: [`docs/test-report.html`](docs/test-report.html) (open it in a browser)
-- Screenshots: [`docs/screenshots/`](docs/screenshots/)
+- Screenshots: [`docs/screenshots/`](docs/screenshots/) (`app/`, `demo/`, `tests/`, `report/`)
+- Classroom demo script: [`docs/DEMO_GUIDE.md`](docs/DEMO_GUIDE.md)
+- Project document: [`docs/Hospital_Management_System_Selenium_Testing_Project.pdf`](docs/Hospital_Management_System_Selenium_Testing_Project.pdf)
 - **Giving the live demo? Start with [section 4](#4-live-demo-step-by-step).**
 
 ---
@@ -63,7 +65,7 @@ Selenium 4 downloads the correct ChromeDriver automatically.
 
 ## 4. Live demo (step by step)
 
-**Full classroom script (what to do and what to say): [DEMO_GUIDE.md](DEMO_GUIDE.md)**
+**Full classroom script (what to do and what to say): [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md)**
 
 | Command | What it does |
 |---|---|
@@ -83,7 +85,7 @@ Selenium 4 downloads the correct ChromeDriver automatically.
 
 | Typing into a field | A check passing | Results page |
 |---|---|---|
-| ![](docs/screenshots/demo_01_selenium_typing.png) | ![](docs/screenshots/demo_02_check_passed.png) | ![](docs/screenshots/demo_03_results_page.png) |
+| ![](docs/screenshots/demo/demo_01_selenium_typing.png) | ![](docs/screenshots/demo/demo_02_check_passed.png) | ![](docs/screenshots/demo/demo_03_results_page.png) |
 
 ```bash
 python run.py              # all 37 test cases, presentation speed (about 7 minutes)
@@ -192,25 +194,41 @@ past appointment dates and invalid time slots are rejected, and an unknown page 
 ## 7. Project structure
 
 ```
-app.py                  Flask web app: all pages and routes
+app.py                  Flask web app: all pages and routes          ->  python app.py
 database.py             SQLite database: all create / read / update / delete operations
 validators.py           Input validation rules (raise an error message when input is wrong)
+login.py                Simple Selenium login test (same as in our document)  ->  python login.py
+run.py                  Live Selenium demo: highlights each step, prints PASS / FAIL  ->  python run.py
+report.py               Runs all 122 tests and opens the HTML test report     ->  python report.py
+requirements.txt        Python packages (pip install -r requirements.txt)
+pytest.ini              PyTest settings
+
 templates/              HTML pages (base.html = layout and sidebar, _icons.html = icons)
 static/style.css        Styling
-login.py                Simple Selenium login test (same as in our document)
-run.py                  Live Selenium demo: highlights each step, prints the Selenium commands and PASS / FAIL
-report.py               Runs all 122 tests and opens the HTML test report
-DEMO_GUIDE.md           Classroom demo script
+
 tests/
   conftest.py           PyTest setup: fresh test database for every test
   test_validators.py    Unit tests
   test_database.py      Integration tests
   test_routes.py        Functional tests
   ui/conftest.py        Selenium setup: starts the app and opens Chrome
-  ui/test_selenium_hms.py  Selenium test cases TC01–TC37
-docs/                   Test report and screenshots
+  ui/test_selenium_hms.py  Selenium test cases TC01-TC37
+
+docs/
+  DEMO_GUIDE.md         Classroom demo script (what to do and what to say)
+  Hospital_Management_System_Selenium_Testing_Project.pdf   Our project document
+  test-report.html      HTML test report (pytest-html)
+  screenshots/
+    app/                The app's pages
+    demo/               What the class sees during python run.py
+    tests/              Final screen of every Selenium test (saved by PyTest on each run)
+    report/             The test report
+
 presentation/           PowerPoint presentation
 ```
+
+Created while running (not in Git): `hospital.db` (the app's data), `report.html` (from `python report.py`),
+`demo_failures/` (screenshots of failed checks in `run.py`).
 
 ## 8. Explaining the code (quick guide)
 
