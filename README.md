@@ -39,7 +39,7 @@ python app.py
 ```
 
 Open http://127.0.0.1:5000 and log in with `admin` / `admin123`.
-Three sample doctors are added automatically the first time you run it. Data is saved in `hospital.db`; delete that file to start fresh.
+Three sample doctors are added automatically the first time you run it. Data is saved in `hospital.db`. To start fresh, run `python run.py --reset` (or delete that file).
 
 ## 3. How to run the tests
 
@@ -92,7 +92,13 @@ python run.py TC03 TC11    # only some test cases
 python run.py --type negative   # only one type: positive, negative, boundary, edge, security
 python run.py --fast       # full speed
 python run.py --list       # list the test cases
+python run.py --reset      # only empty the app's data (no tests)
+python run.py --keep       # keep the data from earlier runs
 ```
+
+Every `run.py` run **starts with a clean app**: the old patients, doctors, appointments, records and bills
+are deleted first and the 3 sample doctors come back, so data never piles up from earlier runs.
+(The PyTest tests always use their own new, empty database, so they start clean too.)
 
 ## 5. Selenium test cases
 

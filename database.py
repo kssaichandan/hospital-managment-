@@ -313,3 +313,16 @@ class HospitalDB:
         self.add_doctor("Dr. Ramesh Kumar", "Cardiologist", "9876543210", 500)
         self.add_doctor("Dr. Priya Sharma", "Pediatrician", "9876501234", 400)
         self.add_doctor("Dr. Anil Reddy", "Orthopedic", "9123456780", 450)
+
+    def reset(self):
+        """Deletes all patients, doctors, appointments, records and bills and starts the
+        IDs again at 1. The admin login stays and the sample doctors are added again.
+        Used so that every live demo (run.py) starts with a clean app."""
+        with closing(self._connect()) as conn:
+            conn.executescript(
+                "DELETE FROM bills; DELETE FROM medical_records; DELETE FROM appointments;"
+                "DELETE FROM patients; DELETE FROM doctors;"
+                "DELETE FROM sqlite_sequence WHERE name <> 'users';"
+            )
+            conn.commit()
+        self.seed_sample_data()

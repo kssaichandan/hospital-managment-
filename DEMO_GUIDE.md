@@ -23,8 +23,8 @@ Extra options for `run.py`:
 1. Install once: `pip install -r requirements.txt`
 2. **Do one practice run with internet on** (the first time, Selenium downloads ChromeDriver):
    `python app.py` in one terminal, `python run.py --fast` in another. All 37 must say PASS (about 1.5 minutes).
-3. Stop the app (**Ctrl + C**) and **delete `hospital.db`**, so the app starts clean in class
-   (it starts again with only 3 sample doctors).
+3. Empty the practice data: `python run.py --reset`. The app is clean again (only 3 sample doctors).
+   You don't have to repeat this before every run: **every `run.py` run starts with a clean app by itself.**
 4. Open the project in VS Code. Open `login.py` and `run.py` in tabs.
 5. Open **two terminals side by side** in VS Code (Terminal → Split Terminal):
    - **Left = Terminal 1**: the app runs here. You will show its log.
@@ -65,7 +65,7 @@ Extra options for `run.py`:
 | Chrome controlled by Selenium | The bar at the top of Chrome: *"Chrome is being controlled by automated test software"* |
 | What Selenium found on the page | The **orange box** around the element |
 | Requests reaching our app | Terminal 1: lines like `"GET /patients" 200` and `"POST /patients" 302` |
-| Data saved in the database | Open the Patients page after the demo: Selenium's patients are still there |
+| Data saved in the database | Open the Patients page after the demo: the patients Selenium added in this run are there |
 | The result | Terminal 2: `CHECK PASSED` and `RESULT: PASS` |
 
 Small words to know: **GET** = open a page. **POST** = submit a form. **200** = OK. **302** = "saved, now go to another page".
@@ -149,6 +149,9 @@ Then Terminal 2: `python login.py`
 ### Step 6: Selenium tests every module: `run.py` (4 minutes)
 
 **Do:** Terminal 2: `python run.py --step TC01-TC13`. It waits for **Enter** before each test case.
+
+> **Clean start:** `run.py` first empties the app (old patients, doctors, appointments, records and
+> bills; the 3 sample doctors come back). The patient you added by hand in Step 2 disappears; that is expected.
 
 > **Two Chrome windows:** your own Chrome (from Step 2) stays open, and Selenium opens a **second,
 > separate** Chrome window that says **"Selenium is ready"** and *"Chrome is being controlled by automated
@@ -314,5 +317,5 @@ The commands are the same: Java `findElement`/`sendKeys`, Python `find_element`/
 | Port 5000 already in use | The app is already running in another terminal. Use that one, or close it with Ctrl + C. |
 | Chrome does not open / driver error | The first run needs internet (Selenium downloads ChromeDriver). Do the practice run before class. |
 | A test fails unexpectedly | Read the red line in Terminal 2 and open the screenshot in `demo_failures/`. Run it again with `python run.py TC05` (your test id). |
-| Too much old data in the app | Ctrl + C in Terminal 1, delete `hospital.db`, run `python app.py` again. |
+| Too much old data in the app | `python run.py --reset` empties it (every normal `run.py` run also starts clean). |
 | Want to stop anything | **Ctrl + C** in that terminal. |

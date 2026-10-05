@@ -7,7 +7,7 @@ Open:  http://127.0.0.1:5000   (login: admin / admin123)
 from datetime import date
 from functools import wraps
 
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 
 from database import HospitalDB
 from validators import GENDERS, TIME_SLOTS
@@ -63,6 +63,18 @@ def create_app(db_path="hospital.db", seed=False):
         session.clear()
         flash("You have been logged out.", "success")
         return redirect(url_for("login"))
+
+    # ---------------- Demo helper ----------------
+    @app.route("/reset-demo-data", methods=["POST"])
+    @login_required
+    def reset_demo_data():
+        """Empties the database so every live demo starts clean (called by run.py).
+        Only allowed from this computer."""
+        if request.remote_addr not in ("127.0.0.1", "::1"):
+            abort(403)
+        db.reset()
+        flash("Demo data reset. The app starts fresh.", "success")
+        return redirect(url_for("dashboard"))
 
     # ---------------- Dashboard ----------------
     @app.route("/dashboard")

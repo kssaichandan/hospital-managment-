@@ -20,15 +20,20 @@ Options:
     python run.py --step        pause before each test case (press Enter to go on)
     python run.py --fast        no slow typing and no pauses
     python run.py --list        list all test cases
+    python run.py --keep        keep the data from earlier runs (no clean start)
+    python run.py --reset       only empty the app's data, then stop
 
-The demo uses the real running app and its real database, so everything Selenium
-adds (patients, doctors, appointments, bills) is still there afterwards.
+Every run starts with a clean app: the old patients, doctors, appointments, records
+and bills are deleted first (the 3 sample doctors come back). After the run,
+everything Selenium added is still in the app, so you can open it and show the data.
 """
 import argparse
 import html
+import http.cookiejar
 import os
 import sys
 import time
+import urllib.parse
 import urllib.request
 from contextlib import contextmanager
 from datetime import date, timedelta
@@ -940,6 +945,25 @@ def app_is_running():
         return False
 
 
+def reset_app_data():
+    """Clean start: logs in to the app and asks it to delete the old patients, doctors,
+    appointments, records and bills (the 3 sample doctors are added again)."""
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    login_form = urllib.parse.urlencode({"username": "admin", "password": "admin123"}).encode()
+    try:
+        opener.open(BASE_URL + "/", login_form, timeout=10)
+        page = opener.open(BASE_URL + "/reset-demo-data", b"", timeout=10).read().decode("utf-8", "replace")
+    except OSError as error:
+        page = str(error)
+    if "Demo data reset" not in page:
+        print(f"{YELLOW}Could not empty the old data - it stays in the app. "
+              f"Restart the app (python app.py) and try again.{RESET}")
+        return False
+    print(f"{GREEN}Clean start:{RESET} old patients, doctors, appointments, records and bills deleted "
+          f"{GREY}(3 sample doctors added again){RESET}")
+    return True
+
+
 def main():
     global driver, speed, BASE_URL
     parser = argparse.ArgumentParser(description="Live Selenium demo for the Hospital Management System")
@@ -951,6 +975,8 @@ def main():
     parser.add_argument("--fast", action="store_true", help="no slow typing and no pauses")
     parser.add_argument("--list", action="store_true", help="list the test cases and exit")
     parser.add_argument("--url", default=BASE_URL, help=f"address of the app (default {BASE_URL})")
+    parser.add_argument("--keep", action="store_true", help="keep the data from earlier runs (no clean start)")
+    parser.add_argument("--reset", action="store_true", help="only empty the app's data, then stop")
     args = parser.parse_args()
     BASE_URL = args.url.rstrip("/")
 
@@ -977,9 +1003,13 @@ def main():
         print(f"{RED}The Hospital Management System is not running at {BASE_URL}.{RESET}")
         print(f"Start it first in another terminal:   {BOLD}python app.py{RESET}")
         return 1
+    if args.reset:
+        return 0 if reset_app_data() else 1
 
     speed = 0 if args.fast else 1
     print(f"{BOLD}Selenium WebDriver live demo{RESET} - testing {BASE_URL}")
+    if not args.keep:
+        reset_app_data()
     print(f"{GREY}Launch the browser:  driver = webdriver.Chrome(){RESET}")
     driver = open_browser()
     print(f"{YELLOW}A new Chrome window opened. Selenium controls it - do not close it.{RESET}")
