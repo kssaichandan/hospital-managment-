@@ -22,7 +22,7 @@ Extra options for `run.py`:
 
 1. Install once: `pip install -r requirements.txt`
 2. **Do one practice run with internet on** (the first time, Selenium downloads ChromeDriver):
-   `python app.py` in one terminal, `python run.py --fast` in another. All 37 must say PASS (about 1.5 minutes).
+   `python app.py` in one terminal, `python run.py --fast` in another. All 37 must say PASS (about 2 minutes).
 3. Empty the practice data: `python run.py --reset`. The app is clean again (only 3 sample doctors).
    You don't have to repeat this before every run: **every `run.py` run starts with a clean app by itself.**
 4. Open the project in VS Code. Open `login.py` and `run.py` in tabs.
@@ -234,7 +234,7 @@ To show all negative tests: `python run.py --type negative` (17 tests, about 3 t
 ### Step 8: Run everything automatically: `report.py` (2 minutes)
 
 **Do:** Terminal 2: `python report.py`. Chrome opens and runs the 37 Selenium tests quickly.
-After about 1.5 minutes, the **test report** opens in the browser: 122 passed.
+After about 2 minutes, the **test report** opens in the browser: 122 passed.
 
 **Say:**
 > "In a real project nobody watches the tests slowly. One command runs all 122 tests in about

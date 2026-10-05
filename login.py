@@ -7,11 +7,17 @@ Steps:
   2. Run this in another terminal:    python login.py
 """
 import time
+import urllib.request
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-driver = webdriver.Chrome()                    # opens Google Chrome
+try:  # first make sure our app is running
+    urllib.request.urlopen("http://127.0.0.1:5000", timeout=3)
+except OSError:
+    raise SystemExit("The Hospital Management System is not running. Start it first:  python app.py")
+
+driver = webdriver.Chrome()                   # opens Google Chrome
 driver.get("http://127.0.0.1:5000")            # opens the Hospital Management System
 
 driver.find_element(By.ID, "username").send_keys("admin")      # type the username

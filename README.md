@@ -88,7 +88,7 @@ Selenium 4 downloads the correct ChromeDriver automatically.
 | ![](docs/screenshots/demo/demo_01_selenium_typing.png) | ![](docs/screenshots/demo/demo_02_check_passed.png) | ![](docs/screenshots/demo/demo_03_results_page.png) |
 
 ```bash
-python run.py              # all 37 test cases, presentation speed (about 7 minutes)
+python run.py              # all 37 test cases, presentation speed (about 8 minutes)
 python run.py --step       # wait for Enter before each test case (best for explaining)
 python run.py TC03 TC11    # only some test cases
 python run.py --type negative   # only one type: positive, negative, boundary, edge, security
